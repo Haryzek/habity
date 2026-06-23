@@ -1044,7 +1044,8 @@ function updateSectionUI(){
   var page = currentPageName();
   var title;
   if(curSection===0) title = (page==="Today" ? "Tasks" : "Progres");
-  else title = (page==="Today" ? "Dnes" : "Přehled") + (curSection===1 ? " 01" : " 02");
+  else if(curSection===1) title = (page==="Today" ? "Návyky" : "Zvykání si");
+  else title = (page==="Today" ? "Volno" : "Užívání si");
   document.getElementById("hTitle").textContent = title;
 }
 
