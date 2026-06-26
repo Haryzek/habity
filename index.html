@@ -222,6 +222,15 @@
   .subedit-bot{display:flex;align-items:center;gap:12px;}
   .subedit-bot .lab{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;}
   .subedit-bot .sv{font-family:var(--mono);font-size:18px;color:var(--accent);width:24px;text-align:center;flex-shrink:0;}
+  .subedit-fixed{display:flex;align-items:center;gap:10px;margin-top:8px;}
+  .subedit-fixed .lab{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;}
+  .subedit-fixed input[type=number]{
+    width:64px;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+    color:var(--accent);font-family:var(--mono);font-size:16px;padding:6px 10px;
+    -webkit-user-select:text;user-select:text;text-align:center;
+  }
+  .subedit-fixed input[type=number]:focus{outline:none;border-color:var(--accent);}
+  .subedit-fixed .hint{font-family:var(--mono);font-size:10px;color:var(--dim);}
   .add-sub{
     width:100%;border:1px dashed var(--border);background:none;color:var(--accent);
     border-radius:12px;padding:13px;font-family:var(--sans);font-size:14px;cursor:pointer;margin-bottom:20px;
@@ -464,6 +473,7 @@ function normalize(o){
               id: st.id || ("s"+Date.now()+Math.random().toString(36).slice(2,6)),
               name: st.name,
               weight: (typeof st.weight==="number" && st.weight>=1) ? st.weight : 5,
+              cells: (typeof st.cells==="number" && st.cells>=1) ? st.cells : null,
               done: !!st.done
             };
           }) : []
@@ -727,35 +737,61 @@ function taskProgress(task){
   task.subtasks.forEach(function(s){ tot+=s.weight; if(s.done) done+=s.weight; });
   return tot>0 ? done/tot : 0;
 }
-/* rozdělení GRID čtverečků mezi subtasky metodou největších zbytků,
-   se zárukou min. 1 čtverečku na každý subtask (pokud se vejdou) */
+/* rozdělení GRID čtverečků mezi subtasky metodou největších zbytků.
+   Subtask s cells!=null dostane přesně cells čtverečků (pevná hodnota).
+   Zbytek do 90 se proporčně (weight) rozdělí mezi subtasky bez cells.
+   Pokud pevné součty přesáhnou 90, proporční dostanou 0 a pevné se zachovají. */
 function cellCounts(subtasks){
   var n = subtasks.length;
   if(n===0) return [];
-  var sum = 0; subtasks.forEach(function(s){ sum += s.weight; });
-  if(sum<=0){ // bez vah – rovnoměrně
-    var base = Math.floor(GRID/n), arr=[]; for(var i=0;i<n;i++) arr.push(base);
-    var rem = GRID - base*n; for(var j=0;j<rem;j++) arr[j]++; return arr;
-  }
-  var raw = subtasks.map(function(s){ return s.weight/sum*GRID; });
-  var counts = raw.map(Math.floor);
-  var used = counts.reduce(function(a,b){ return a+b; }, 0);
-  var rem2 = GRID - used;
-  var order = raw.map(function(v,i){ return {i:i, frac:v-Math.floor(v)}; })
-                 .sort(function(a,b){ return b.frac-a.frac; });
-  for(var k=0;k<rem2;k++) counts[order[k % n].i]++;
-  // záruka min 1, pokud se vejde (n <= GRID)
-  if(n<=GRID){
-    for(var m=0;m<n;m++){
-      if(counts[m]===0){
-        // půjč 1 od největšího, který má >1
-        var bi=-1, bv=1;
-        for(var p=0;p<n;p++){ if(counts[p]>bv){ bv=counts[p]; bi=p; } }
-        if(bi>=0){ counts[bi]--; counts[m]++; }
+
+  // spočítej pevně fixované
+  var fixedSum = 0;
+  subtasks.forEach(function(s){ if(s.cells!=null && s.cells>=1) fixedSum += s.cells; });
+
+  var remaining = Math.max(0, GRID - fixedSum);
+  var freeSubtasks = subtasks.filter(function(s){ return s.cells==null || s.cells<1; });
+
+  // proporční rozdělení zbytku
+  var freeCounts = [];
+  if(freeSubtasks.length===0){
+    // všechno fixní, nic k rozdělování
+  } else if(remaining===0){
+    freeSubtasks.forEach(function(){ freeCounts.push(0); });
+  } else {
+    var wsum = 0; freeSubtasks.forEach(function(s){ wsum += s.weight; });
+    if(wsum<=0){
+      var base = Math.floor(remaining/freeSubtasks.length);
+      freeSubtasks.forEach(function(){ freeCounts.push(base); });
+      var leftover = remaining - base*freeSubtasks.length;
+      for(var i=0;i<leftover;i++) freeCounts[i]++;
+    } else {
+      var raw = freeSubtasks.map(function(s){ return s.weight/wsum*remaining; });
+      freeCounts = raw.map(Math.floor);
+      var used = freeCounts.reduce(function(a,b){ return a+b; },0);
+      var rem2 = remaining - used;
+      var order = raw.map(function(v,i){ return {i:i,frac:v-Math.floor(v)}; })
+                     .sort(function(a,b){ return b.frac-a.frac; });
+      for(var k=0;k<rem2;k++) freeCounts[order[k % freeSubtasks.length].i]++;
+      // min 1 pro volné, pokud se vejde
+      if(freeSubtasks.length<=remaining){
+        for(var m=0;m<freeSubtasks.length;m++){
+          if(freeCounts[m]===0){
+            var bi=-1,bv=1;
+            for(var p=0;p<freeSubtasks.length;p++){ if(freeCounts[p]>bv){ bv=freeCounts[p]; bi=p; } }
+            if(bi>=0){ freeCounts[bi]--; freeCounts[m]++; }
+          }
+        }
       }
     }
   }
-  return counts;
+
+  // sestavení výsledku v pořadí subtasks
+  var fi = 0;
+  return subtasks.map(function(s){
+    if(s.cells!=null && s.cells>=1) return s.cells;
+    return freeCounts[fi++] || 0;
+  });
 }
 /* zobrazené pořadí subtasků: splněné vlevo (v původním pořadí), pak nesplněné */
 function displayOrder(task){
@@ -896,6 +932,7 @@ function makeSubRow(data){
   row.dataset.id = data.id || "";
   row.dataset.done = data.done ? "1" : "";
   var w = (typeof data.weight==="number") ? data.weight : 5;
+  var c = (typeof data.cells==="number" && data.cells>=1) ? data.cells : "";
   row.innerHTML =
     '<div class="subedit-top">'+
       '<input type="text" class="s-name" placeholder="třeba Změřit pokoj" autocomplete="off">'+
@@ -905,6 +942,11 @@ function makeSubRow(data){
       '<span class="lab">náročnost</span>'+
       '<input type="range" class="s-weight" min="1" max="10" value="'+w+'">'+
       '<span class="sv">'+w+'</span>'+
+    '</div>'+
+    '<div class="subedit-fixed">'+
+      '<span class="lab">Pevná hodnota:</span>'+
+      '<input type="number" class="s-cells" min="1" max="90" placeholder="—" value="'+c+'">'+
+      '<span class="hint">čtverečků (přepíše náročnost)</span>'+
     '</div>';
   row.querySelector(".s-name").value = data.name || "";
   var rng = row.querySelector(".s-weight"), sv = row.querySelector(".sv");
@@ -951,10 +993,14 @@ document.getElementById("saveTask").onclick = function(){
   document.querySelectorAll("#subRows .subedit").forEach(function(row){
     var sn = row.querySelector(".s-name").value.trim();
     if(!sn) return;
+    var cellsRaw = row.querySelector(".s-cells").value;
+    var cellsVal = cellsRaw !== "" ? parseInt(cellsRaw, 10) : null;
+    if(cellsVal !== null && (isNaN(cellsVal) || cellsVal < 1)) cellsVal = null;
     subs.push({
       id: row.dataset.id || ("s"+Date.now()+Math.random().toString(36).slice(2,6)),
       name: sn,
       weight: +row.querySelector(".s-weight").value,
+      cells: cellsVal,
       done: row.dataset.done==="1"
     });
   });
