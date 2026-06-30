@@ -271,6 +271,20 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+  /* 🍹 piňa colada odměna za splněný úkol */
+  .pina{
+    position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) scale(.3);
+    font-size:96px;z-index:90;pointer-events:none;opacity:0;
+    filter:drop-shadow(0 6px 16px rgba(0,0,0,.5));
+  }
+  .pina.pop{animation:pinapop .9s cubic-bezier(.2,.8,.3,1) forwards;}
+  @keyframes pinapop{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(-12deg);}
+    25%{opacity:1;transform:translate(-50%,-50%) scale(1.25) rotate(6deg);}
+    55%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-3deg);}
+    100%{opacity:0;transform:translate(-50%,-58%) scale(1.05) rotate(0deg);}
+  }
+
   /* ===================== CHECK – úkolová sekce (pos 1) ===================== */
   /* prioritní proužek: chladná -> sytě červená dle priority 1..10 */
   .pstripe{width:3px;align-self:stretch;border-radius:3px;flex-shrink:0;min-height:18px;}
@@ -358,6 +372,25 @@
     width:100%;border:1px dashed var(--border);background:none;color:var(--accent);
     border-radius:10px;padding:11px;font-family:var(--sans);font-size:13px;cursor:pointer;margin-bottom:18px;
   }
+
+  /* --- Přehled úkolů: přepínač Dny/Měsíce + řádky --- */
+  .ovtoggle{display:flex;gap:8px;margin:2px 0 16px;}
+  .ovtoggle .ovt{
+    border:1px solid var(--border);background:var(--surface2);color:var(--dim);
+    border-radius:8px;padding:7px 16px;font-family:var(--sans);font-size:13px;cursor:pointer;
+    transition:all .12s ease;
+  }
+  .ovtoggle .ovt.on{background:var(--accent);border-color:var(--accent);color:#15120E;}
+  .ovtoggle .ovt:active{transform:scale(.96);}
+  .ovrow{margin-bottom:13px;}
+  .ovrow .ovl{
+    display:flex;align-items:baseline;gap:8px;margin-bottom:5px;
+  }
+  .ovrow .ovl .od{font-family:var(--mono);font-size:11px;color:var(--dim);}
+  .ovrow .ovl.is-today .od{color:var(--accent);}
+  .ovrow .ovl .ostat{font-family:var(--mono);font-size:10px;color:var(--dim);margin-left:auto;}
+  .ovrow .ovl .ostat .og{color:var(--done);}
+  .ovrow .ovl .ostat .or{color:var(--missed);}
 </style>
 </head>
 <body>
@@ -438,11 +471,21 @@
         <div id="progresList"></div>
         <div class="empty-state" id="progresEmpty" style="display:none">Žádné úkoly k zobrazení.</div>
       </div>
-      <!-- pos 1: Přehled ÚKOLŮ (placeholder – doplní vlna 1b) -->
+      <!-- pos 1: Přehled ÚKOLŮ -->
       <div class="panel">
-        <div class="cal-empty" id="taskOverviewPlaceholder">
-          Přehled úkolů<br>dorazí v další vlně. 🥥
+        <div class="ovtoggle" id="utOvToggle">
+          <div class="ovt on" data-mode="days">Dny</div>
+          <div class="ovt" data-mode="months">Měsíce</div>
         </div>
+        <div class="legend" id="utOvLegendDays">
+          <span><i style="background:var(--done)"></i>splněno</span>
+          <span><i style="background:var(--missed)"></i>prokrastinace</span>
+        </div>
+        <div class="legend" id="utOvLegendMonths" style="display:none">
+          <span><i style="background:var(--done)"></i>splněné úkoly (max 90/měsíc)</span>
+        </div>
+        <div id="utOvList"></div>
+        <div class="empty-state" id="utOvEmpty" style="display:none">Zatím žádná historie úkolů.</div>
       </div>
       <!-- pos 2: Přehled návyky 01 -->
       <div class="panel">
@@ -598,6 +641,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="pina" id="pina">🍹</div>
 
 <!-- DETAIL (návyky) -->
 <div class="detail" id="detail">
@@ -1399,6 +1443,7 @@ function utComplete(t){
     t.done = true;
   }
   save(); renderCheck();
+  pina(); // 🍹 odměna
 }
 /* ✕ Nesplněno (poctivá červená) – den zčervená + úkol na zítřek */
 function utMiss(t){
@@ -1414,6 +1459,32 @@ function utMove(t, mode){
   if(mode==="tomorrow") t.date = key(addDays(base,1));
   else if(mode==="week") t.date = key(addDays(base,7));
   save(); renderCheck();
+}
+
+/* ---- auto-rollup propadlých úkolů (běží při otevření) ----
+   Ne-repeat propadlý (date < dnešek, není Done): +1 missed k propadlému dni,
+     sesun na dnešek. Jen JEDNA červená za libovolně dlouhý propad.
+   Repeat propadlý: sesun na dnešek, BEZ červené.
+   Dnešek a budoucnost se nechávají být.                                  */
+function rollupUtasks(){
+  var tk = key(today());
+  var t0 = today();
+  var changed = false;
+  state.utasks.forEach(function(u){
+    if(u.date===null) return;                 // nedatovaný = v backlogu, netýká se
+    if(u.backlog==="Done") return;            // splněný archiv
+    var d = parseKey(u.date);
+    if(d >= t0) return;                        // dnešek a budoucnost posvátné
+    // propadlý úkol z minulosti
+    if(u.repeat==="none"){
+      bumpDaily(u.date, "missed", 1);          // červená k propadlému dni
+    }
+    u.date = tk;                               // sesun na dnešek (repeat i ne-repeat)
+    changed = true;
+  });
+  state.lastRollup = tk;
+  save();                                      // uložíme i lastRollup
+  return changed;
 }
 
 /* ---- render: jeden řádek úkolu ---- */
@@ -1552,6 +1623,94 @@ function renderCheck(){
   if(document.getElementById("blogView").classList.contains("open")) renderBlogView();
   renderCheckDefault();
 }
+
+/* ================= Přehled ÚKOLŮ (Dny / Měsíce) ================= */
+var utOvMode = "days";  // "days" | "months"
+
+function renderUtOverview(){
+  var list = document.getElementById("utOvList");
+  var empty = document.getElementById("utOvEmpty");
+  list.innerHTML = "";
+  var keys = Object.keys(state.daily).filter(function(k){
+    var d = state.daily[k];
+    return d && (d.done>0 || d.missed>0);
+  });
+  empty.style.display = keys.length ? "none" : "block";
+
+  // legendy dle módu
+  document.getElementById("utOvLegendDays").style.display   = (utOvMode==="days")   ? "flex" : "none";
+  document.getElementById("utOvLegendMonths").style.display = (utOvMode==="months") ? "flex" : "none";
+
+  if(!keys.length) return;
+
+  var tk = key(today());
+
+  if(utOvMode==="days"){
+    // poslední dny sestupně (nejnovější nahoře); zobraz jen dny s aktivitou
+    keys.sort().reverse();
+    keys.forEach(function(k){
+      var d = state.daily[k];
+      var doneN = d.done||0, missN = d.missed||0;
+      var row = document.createElement("div"); row.className = "ovrow";
+      var lab = document.createElement("div"); lab.className = "ovl" + (k===tk?" is-today":"");
+      var dd = parseKey(k);
+      lab.innerHTML = '<span class="od"></span><span class="ostat"></span>';
+      lab.querySelector(".od").textContent = fmtCalLabel(dd);
+      lab.querySelector(".ostat").innerHTML =
+        '<span class="og">'+doneN+'</span> / <span class="or">'+missN+'</span>';
+      row.appendChild(lab);
+      var grid = document.createElement("div"); grid.className = "grid";
+      // cap 30 čtverečků celkem: zelené pak červené
+      var total = doneN + missN;
+      var greens = doneN, reds = missN;
+      if(total>30){
+        // proporčně osekni, ale zachovej aspoň 1 z každé nenulové
+        var scale = 30/total;
+        greens = Math.round(doneN*scale);
+        reds = 30 - greens;
+        if(doneN>0 && greens===0) greens=1;
+        if(missN>0 && reds===0) reds=1;
+      }
+      for(var g=0;g<greens;g++){ var c=document.createElement("div"); c.className="cell done"; grid.appendChild(c); }
+      for(var r=0;r<reds;r++){ var c2=document.createElement("div"); c2.className="cell missed"; grid.appendChild(c2); }
+      row.appendChild(grid);
+      list.appendChild(row);
+    });
+  } else {
+    // měsíce: seskup done podle YYYY-MM, sestupně
+    var months = {};
+    keys.forEach(function(k){
+      var ym = k.slice(0,7);
+      months[ym] = (months[ym]||0) + (state.daily[k].done||0);
+    });
+    var ymKeys = Object.keys(months).sort().reverse();
+    var MNAMES = ["leden","únor","březen","duben","květen","červen","červenec","srpen","září","říjen","listopad","prosinec"];
+    ymKeys.forEach(function(ym){
+      var cnt = months[ym];
+      if(cnt<=0) return;
+      var parts = ym.split("-");
+      var row = document.createElement("div"); row.className = "ovrow";
+      var lab = document.createElement("div"); lab.className = "ovl" + (ym===tk.slice(0,7)?" is-today":"");
+      lab.innerHTML = '<span class="od"></span><span class="ostat"></span>';
+      lab.querySelector(".od").textContent = MNAMES[+parts[1]-1]+" "+parts[0];
+      lab.querySelector(".ostat").innerHTML = '<span class="og">'+cnt+'</span> splněno';
+      row.appendChild(lab);
+      var grid = document.createElement("div"); grid.className = "grid";
+      var shown = Math.min(cnt, 90);
+      for(var i=0;i<shown;i++){ var c=document.createElement("div"); c.className="cell done"; grid.appendChild(c); }
+      row.appendChild(grid);
+      list.appendChild(row);
+    });
+  }
+}
+
+document.querySelectorAll("#utOvToggle .ovt").forEach(function(btn){
+  btn.onclick = function(){
+    utOvMode = btn.dataset.mode;
+    document.querySelectorAll("#utOvToggle .ovt").forEach(function(b){ b.classList.toggle("on", b===btn); });
+    renderUtOverview();
+  };
+});
 
 /* ================= zadávací / editační sheet úkolu ================= */
 var editingUtId = null;
@@ -1763,6 +1922,14 @@ function toast(msg){
   clearTimeout(t._timer);
   t._timer = setTimeout(function(){ t.classList.remove("show"); }, 2200);
 }
+function pina(){
+  var p = document.getElementById("pina");
+  p.classList.remove("pop");
+  void p.offsetWidth; // restart animace i při rychlém klikání
+  p.classList.add("pop");
+  clearTimeout(p._timer);
+  p._timer = setTimeout(function(){ p.classList.remove("pop"); }, 900);
+}
 
 /* ---------- SETTINGS / export-import ---------- */
 function openSettings(){ document.getElementById("setScrim").classList.add("open"); }
@@ -1883,7 +2050,7 @@ document.querySelectorAll(".tab").forEach(function(tab){
     document.getElementById("pageOverview").classList.toggle("active", p==="Overview");
     document.getElementById("fab").style.display = "block";
     if(p==="Today"){ renderTasksPanel(); renderCheck(); renderTodayPanel(0); renderTodayPanel(1); }
-    else { renderProgresPanel(); renderOverviewPanel(0); renderOverviewPanel(1); }
+    else { renderProgresPanel(); renderUtOverview(); renderOverviewPanel(0); renderOverviewPanel(1); }
     updateSectionUI();
   };
 });
@@ -1891,9 +2058,10 @@ document.querySelectorAll(".tab").forEach(function(tab){
 /* ---------- init ---------- */
 function renderAll(){
   renderTasksPanel(); renderCheck(); renderTodayPanel(0); renderTodayPanel(1);
-  renderProgresPanel(); renderOverviewPanel(0); renderOverviewPanel(1);
+  renderProgresPanel(); renderUtOverview(); renderOverviewPanel(0); renderOverviewPanel(1);
 }
 document.getElementById("hDate").textContent = fmtLong(today());
+rollupUtasks();   // sesune propadlé úkoly a započítá červené, než vykreslíme
 renderAll();
 updateSectionUI();
 </script>
