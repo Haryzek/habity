@@ -337,9 +337,11 @@
   .blog-head{display:flex;align-items:center;gap:10px;margin:2px 0 14px;}
   .blog-back{background:none;border:none;color:var(--accent);font-size:15px;cursor:pointer;padding:6px 0;font-family:var(--sans);flex-shrink:0;}
   .blog-sel{
-    flex:1;background:var(--bg);border:1px solid var(--border);border-radius:9px;
-    color:var(--text);font-family:var(--serif);font-size:16px;padding:9px 12px;
+    flex:1;background:var(--surface2);border:1px solid var(--accent);border-radius:9px;
+    color:var(--text);font-family:var(--serif);font-size:16px;padding:9px 38px 9px 12px;
     -webkit-appearance:none;appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D9A441' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 11px center;background-size:18px;
   }
   .blog-sel:focus{outline:none;border-color:var(--accent);}
   .checkDefault{display:block;}
@@ -364,8 +366,10 @@
   .bouncer-box.dim{opacity:.4;pointer-events:none;}
   .blog-pick{
     width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;
-    color:var(--text);font-family:var(--serif);font-size:16px;padding:11px 13px;margin-bottom:10px;
+    color:var(--text);font-family:var(--serif);font-size:16px;padding:11px 38px 11px 13px;margin-bottom:10px;
     -webkit-appearance:none;appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D9A441' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;background-size:18px;
   }
   .blog-pick:focus{outline:none;border-color:var(--accent);}
   .blog-new{
@@ -625,6 +629,7 @@
     <div class="set-row">
       <button class="btn btn-primary" id="btnExport">Exportovat zálohu (JSON)</button>
       <button class="btn btn-ghost" id="btnImport">Načíst zálohu ze souboru</button>
+      <button class="btn btn-danger" id="btnClearOv" style="margin-top:0">Vymazat historii úkolů</button>
       <button class="btn btn-ghost" id="setClose">Zavřít</button>
     </div>
     <input type="file" id="fileImport" accept="application/json,.json" style="display:none">
@@ -1963,6 +1968,13 @@ document.getElementById("fileImport").onchange = function(e){
     document.getElementById("fileImport").value = "";
   };
   reader.readAsText(file);
+};
+document.getElementById("btnClearOv").onclick = function(){
+  askConfirm("Vymazat celou historii úkolů (zelené i červené čtverečky v Přehledu)? Úkoly samotné to nesmaže, jen jejich stopy v Přehledu.", "Vymazat", function(){
+    state.daily = {}; state.lastRollup = null;
+    save(); closeSettings(); renderAll();
+    toast("Historie úkolů vymazána.");
+  });
 };
 
 /* ---------- swipe mezi pozicemi (0..3) ---------- */
