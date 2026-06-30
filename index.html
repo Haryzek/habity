@@ -310,11 +310,18 @@
 
   /* --- Check default obrazovka: WiP náhled + kalendář, jedna scroll-plocha --- */
   .wipbar{
-    display:flex;align-items:baseline;justify-content:space-between;
-    margin:2px 0 7px;cursor:pointer;
+    display:flex;align-items:center;
+    margin:2px 0 7px;
   }
-  .wipbar .wtitle{font-family:var(--serif);font-size:15px;color:var(--text);}
-  .wipbar .wmore{font-family:var(--mono);font-size:10px;color:var(--accent);}
+  .wip-sel{
+    width:100%;
+    background:var(--surface2);border:1px solid var(--accent);border-radius:8px;
+    color:var(--text);font-family:var(--serif);font-size:15px;padding:9px 32px 9px 12px;
+    -webkit-appearance:none;appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D9A441' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 11px center;background-size:16px;
+  }
+  .wip-sel:focus{outline:none;border-color:var(--accent);}
   .wip-wrap{margin-bottom:6px;}
   .wip-empty{font-family:var(--serif);font-size:13px;color:var(--dim);padding:4px 2px 10px;}
 
@@ -327,6 +334,8 @@
   .cal-sep.is-today .cl{color:var(--accent);}
   .cal-day{margin-bottom:4px;}
   .cal-empty{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:60vh;
     text-align:center;color:var(--dim);font-family:var(--serif);
     font-size:14px;padding:24px 20px;line-height:1.6;
   }
@@ -427,8 +436,7 @@
         <!-- default obrazovka: WiP náhled + kalendář -->
         <div class="checkDefault" id="checkDefault">
           <div class="wipbar" id="wipBar">
-            <span class="wtitle" id="wipTitle">Wip</span>
-            <span class="wmore" id="wipMore"></span>
+            <select class="wip-sel" id="wipSelect"></select>
           </div>
           <div class="wip-wrap" id="wipPreview"></div>
           <div id="calList"></div>
@@ -1547,23 +1555,24 @@ function mkBtn(cls, label, fn){
 
 /* ---- render: Check default (WiP náhled + kalendář) ---- */
 function renderCheckDefault(){
+  // dropdown pro navigaci mezi backlogy (default Wip; volba jiného = skok do backlog view)
+  var wsel = document.getElementById("wipSelect");
+  if(wsel){
+    wsel.innerHTML = "";
+    state.backlogs.forEach(function(name){
+      var o = document.createElement("option");
+      o.value = name; o.textContent = name;
+      if(name==="Wip") o.selected = true;
+      wsel.appendChild(o);
+    });
+  }
   // WiP náhled – top nedatované z Wip
   var wip = backlogTasks("Wip");
   var preview = document.getElementById("wipPreview");
-  var more = document.getElementById("wipMore");
   preview.innerHTML = "";
-  // ukaž minimálně 10; pokud je jich víc, zbytek schovej a nabídni "víc"
+  // ukaž minimálně 10; pokud je jich víc, zbytek se dozvíš scrollem
   var shown = (wip.length<=WIP_PREVIEW_MIN) ? wip : wip.slice(0, WIP_PREVIEW_MIN);
-  if(shown.length===0){
-    var e = document.createElement("div");
-    e.className = "wip-empty";
-    e.textContent = "Wip backlog je prázdný.";
-    preview.appendChild(e);
-  } else {
-    shown.forEach(function(t){ preview.appendChild(makeUtaskRow(t,"backlog")); });
-  }
-  var hidden = wip.length - shown.length;
-  more.textContent = hidden>0 ? ("+ "+hidden+" dalších →") : "otevřít →";
+  shown.forEach(function(t){ preview.appendChild(makeUtaskRow(t,"backlog")); });
 
   // kalendář
   var cal = document.getElementById("calList");
@@ -1619,7 +1628,12 @@ function closeBlogView(){
   document.getElementById("checkDefault").classList.remove("hide");
   renderCheckDefault();
 }
-document.getElementById("wipBar").onclick = function(){ openBlogView("Wip"); };
+// dropdown na hlavní stránce: volba jiného backlogu než Wip = skok do backlog view
+document.getElementById("wipSelect").onchange = function(){
+  var name = this.value;
+  if(name==="Wip"){ this.selectedIndex = 0; return; } // Wip = jsi doma, nikam neskákej
+  openBlogView(name);
+};
 document.getElementById("blogBack").onclick = closeBlogView;
 document.getElementById("blogSelect").onchange = function(){ blogCurrent = this.value; renderBlogView(); };
 
