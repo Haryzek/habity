@@ -46,9 +46,6 @@
   }
   header h1{font-family:var(--serif);font-weight:500;font-size:26px;margin:0;letter-spacing:.3px;}
   header .date{font-family:var(--mono);font-size:12px;color:var(--dim);}
-  header .hright{display:flex;align-items:center;gap:12px;}
-  .gear-btn{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:2px 0;line-height:1;}
-  .gear-btn:active{color:var(--accent);transform:scale(.92);}
 
   /* ---- pager (tečky sekcí) ---- */
   .pager{
@@ -64,8 +61,8 @@
   /* ---- pages + swipe track (3 pozice: Tasks / 01 / 02) ---- */
   .page{display:none;overflow:hidden;touch-action:pan-y;}
   .page.active{display:block;}
-  .track{display:flex;width:200%;transition:transform .25s ease;will-change:transform;}
-  .panel{width:50%;flex:0 0 50%;}
+  .track{display:flex;width:400%;transition:transform .25s ease;will-change:transform;}
+  .panel{width:25%;flex:0 0 25%;}
 
   /* ---- today cards ---- */
   .card{
@@ -189,54 +186,63 @@
   .sheet{
     background:var(--surface);width:100%;max-width:560px;
     border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:none;
-    padding:22px 20px calc(26px + env(safe-area-inset-bottom));
+    padding:16px 18px calc(18px + env(safe-area-inset-bottom));
     animation:slideup .2s ease;
   }
   .sheet.tall{max-height:88vh;overflow-y:auto;}
   @keyframes slideup{from{transform:translateY(40px);opacity:.6;}to{transform:translateY(0);opacity:1;}}
   .sheet h2{font-family:var(--serif);font-weight:500;font-size:20px;margin:0 0 18px;}
-  label{display:block;font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px;}
+  label{display:block;font-family:var(--mono);font-size:10px;color:var(--dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
   input[type=text]{
     width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;
-    color:var(--text);font-family:var(--serif);font-size:18px;padding:12px 14px;margin-bottom:18px;
+    color:var(--text);font-family:var(--serif);font-size:16px;padding:9px 13px;margin-bottom:12px;
     -webkit-user-select:text;user-select:text;
   }
   input[type=text]:focus{outline:none;border-color:var(--accent);}
-  .prio-row{display:flex;align-items:center;gap:14px;margin-bottom:24px;}
-  input[type=range]{flex:1;accent-color:var(--accent);height:30px;}
-  .prio-val{font-family:var(--mono);font-size:22px;color:var(--accent);width:28px;text-align:center;}
+  .prio-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .prio-lab{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;}
+  input[type=range]{flex:1;accent-color:var(--accent);height:22px;}
+  .prio-val{font-family:var(--mono);font-size:18px;color:var(--accent);width:24px;text-align:center;flex-shrink:0;}
   .btn{
-    width:100%;border:none;border-radius:12px;padding:15px;font-family:var(--sans);
-    font-size:16px;cursor:pointer;font-weight:500;
+    width:100%;border:none;border-radius:12px;padding:12px;font-family:var(--sans);
+    font-size:15px;cursor:pointer;font-weight:500;
   }
   .btn-primary{background:var(--accent);color:#15120E;}
   .btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);margin-top:10px;}
   .btn-danger{background:none;color:var(--missed);border:1px solid var(--missed);margin-top:10px;}
   .btn:active{transform:scale(.98);}
+  /* tlačítka na jednu řádku (přidat/uložit/zrušit) */
+  .btn-row{display:flex;gap:8px;margin-bottom:0;}
+  .btn-row .btn,.btn-row .add-sub,.btn-row .blog-new{width:auto;flex:1;margin-top:0;margin-bottom:0;}
+  .btn-slim{padding:10px;margin-top:10px;font-size:14px;}
+  /* popisek předsazený vlevo od prvku na stejné řádce */
+  .field-inline{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .field-inline>label{margin-bottom:0;flex-shrink:0;}
+  .field-inline .seg-row{margin-bottom:0;flex:1;}
 
   /* ---- editace subtasků v sheetu ---- */
-  .subedit{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;}
-  .subedit-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-  .subedit-top input[type=text]{margin-bottom:0;font-size:16px;padding:10px 12px;}
+  .subedit{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:9px 10px;margin-bottom:8px;}
+  .subedit-top{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .subedit-top input[type=text]{margin-bottom:0;font-size:15px;padding:7px 11px;}
   .subedit-del{
-    background:none;border:none;color:var(--missed);font-size:20px;cursor:pointer;
-    flex-shrink:0;width:34px;height:34px;line-height:1;
+    background:none;border:none;color:var(--missed);font-size:18px;cursor:pointer;
+    flex-shrink:0;width:30px;height:30px;line-height:1;
   }
   .subedit-bot{display:flex;align-items:center;gap:12px;}
   .subedit-bot .lab{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;}
-  .subedit-bot .sv{font-family:var(--mono);font-size:18px;color:var(--accent);width:24px;text-align:center;flex-shrink:0;}
-  .subedit-fixed{display:flex;align-items:center;gap:10px;margin-top:8px;}
+  .subedit-bot .sv{font-family:var(--mono);font-size:16px;color:var(--accent);width:22px;text-align:center;flex-shrink:0;}
+  .subedit-fixed{display:flex;align-items:center;gap:10px;margin-top:6px;}
   .subedit-fixed .lab{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;}
   .subedit-fixed input[type=number]{
-    width:64px;background:var(--bg);border:1px solid var(--border);border-radius:8px;
-    color:var(--accent);font-family:var(--mono);font-size:16px;padding:6px 10px;
+    width:60px;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+    color:var(--accent);font-family:var(--mono);font-size:15px;padding:5px 9px;
     -webkit-user-select:text;user-select:text;text-align:center;
   }
   .subedit-fixed input[type=number]:focus{outline:none;border-color:var(--accent);}
   .subedit-fixed .hint{font-family:var(--mono);font-size:10px;color:var(--dim);}
   .add-sub{
     width:100%;border:1px dashed var(--border);background:none;color:var(--accent);
-    border-radius:12px;padding:13px;font-family:var(--sans);font-size:14px;cursor:pointer;margin-bottom:20px;
+    border-radius:12px;padding:10px;font-family:var(--sans);font-size:14px;cursor:pointer;margin-bottom:14px;
   }
   .sublabel{display:flex;align-items:baseline;justify-content:space-between;}
   .sublabel .hint{font-family:var(--mono);font-size:10px;color:var(--dim);text-transform:none;letter-spacing:0;}
@@ -360,25 +366,28 @@
   .checkDefault.hide{display:none;}
 
   /* --- zadávací sheet: deadline + repeat segmenty --- */
-  .seg-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;}
+  .seg-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
   .seg{
     border:1px solid var(--border);background:var(--surface2);color:var(--dim);
-    border-radius:8px;padding:8px 11px;font-family:var(--sans);font-size:13px;cursor:pointer;
+    border-radius:8px;padding:7px 10px;font-family:var(--sans);font-size:12px;cursor:pointer;
     transition:all .12s ease;
   }
   .seg.on{background:var(--accent);border-color:var(--accent);color:#15120E;}
   .seg:active{transform:scale(.96);}
+  /* těsné segmenty na jednu řádku (termín / opakování) – rovnoměrné dělení */
+  .seg-tight{flex-wrap:nowrap;gap:4px;}
+  .seg-tight .seg{flex:1;padding:7px 2px;text-align:center;font-size:12px;}
   .date-in{
     width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;
-    color:var(--text);font-family:var(--mono);font-size:15px;padding:11px 13px;margin-bottom:18px;
+    color:var(--text);font-family:var(--mono);font-size:14px;padding:8px 12px;margin-bottom:12px;
     -webkit-user-select:text;user-select:text;
   }
   .date-in:focus{outline:none;border-color:var(--accent);}
-  .bouncer-box{margin-bottom:18px;}
+  .bouncer-box{margin-bottom:12px;}
   .bouncer-box.dim{opacity:.4;pointer-events:none;}
   .blog-pick{
     width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;
-    color:var(--text);font-family:var(--serif);font-size:16px;padding:11px 38px 11px 13px;margin-bottom:10px;
+    color:var(--text);font-family:var(--serif);font-size:15px;padding:8px 38px 8px 13px;margin-bottom:10px;
     -webkit-appearance:none;appearance:none;cursor:pointer;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D9A441' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
     background-repeat:no-repeat;background-position:right 12px center;background-size:18px;
@@ -386,7 +395,7 @@
   .blog-pick:focus{outline:none;border-color:var(--accent);}
   .blog-new{
     width:100%;border:1px dashed var(--border);background:none;color:var(--accent);
-    border-radius:10px;padding:11px;font-family:var(--sans);font-size:13px;cursor:pointer;margin-bottom:18px;
+    border-radius:10px;padding:10px;font-family:var(--sans);font-size:13px;cursor:pointer;margin-bottom:0;
   }
 
   /* --- Přehled úkolů: přepínač Dny/Měsíce + řádky --- */
@@ -413,42 +422,30 @@
 
 <header>
   <h1 id="hTitle">Návyky</h1>
-  <div class="hright">
-    <span class="date" id="hDate"></span>
-    <button class="gear-btn" id="btnSettings" aria-label="Nastavení">⚙</button>
-  </div>
+  <span class="date" id="hDate"></span>
 </header>
 
 <div class="pager" id="pager">
-  <div class="dot on" data-view="0"></div>
-  <div class="dot" data-view="1"></div>
+  <div class="dot" data-sec="0"></div>
+  <div class="dot" data-sec="1"></div>
+  <div class="dot on" data-sec="2"></div>
+  <div class="dot" data-sec="3"></div>
 </div>
 
 <div class="wrap">
-  <!-- SEKCE: TASKY (Check / Progres) -->
-  <section class="page" id="secTasky">
-    <div class="track" id="trackTasky">
+  <!-- TODAY/CHECK (pozice: Tasky / Úkoly / Návyky / Volno) -->
+  <section class="page active" id="pageToday">
+    <div class="track" id="trackToday">
+      <!-- pos 0: TASKS (projektové, beze změny) -->
       <div class="panel">
         <div id="tasksList"></div>
         <div class="empty-state" id="tasksEmpty" style="display:none">
           Zatím žádný úkol.<br>Ťukni na <b style="color:var(--accent)">+</b> a přidej první.
         </div>
       </div>
+      <!-- pos 1: ÚKOLY (nová sekce – Check) -->
       <div class="panel">
-        <div class="legend">
-          <span><i style="background:var(--done)"></i>hotovo</span>
-          <span><i style="background:var(--empty)"></i>zbývá</span>
-        </div>
-        <div id="progresList"></div>
-        <div class="empty-state" id="progresEmpty" style="display:none">Žádné úkoly k zobrazení.</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- SEKCE: ÚKOLY (Check / Přehled úkolů) -->
-  <section class="page" id="secUkoly">
-    <div class="track" id="trackUkoly">
-      <div class="panel">
+        <!-- default obrazovka: WiP náhled + kalendář -->
         <div class="checkDefault" id="checkDefault">
           <div class="wipbar" id="wipBar">
             <select class="wip-sel" id="wipSelect"></select>
@@ -459,6 +456,7 @@
             Kalendář je prázdný.<br>Ťukni na <b style="color:var(--accent)">+</b> a naplánuj úkol.
           </div>
         </div>
+        <!-- backlog view (přepne se přes WiP lištu) -->
         <div class="blogview" id="blogView">
           <div class="blog-head">
             <button class="blog-back" id="blogBack">‹ Zpět</button>
@@ -468,6 +466,36 @@
           <div class="cal-empty" id="blogEmpty" style="display:none">Tenhle backlog je prázdný.</div>
         </div>
       </div>
+      <!-- pos 2: Návyky 01 -->
+      <div class="panel">
+        <div id="todayList0"></div>
+        <div class="empty-state" id="todayEmpty0" style="display:none">
+          Zatím žádné povinnosti.<br>Ťukni na <b style="color:var(--accent)">+</b> a přidej první.
+        </div>
+      </div>
+      <!-- pos 3: Návyky 02 -->
+      <div class="panel">
+        <div id="todayList1"></div>
+        <div class="empty-state" id="todayEmpty1" style="display:none">
+          Zatím žádná volnočasovka.<br>Ťukni na <b style="color:var(--accent)">+</b> a přidej první.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OVERVIEW (pozice: Progres / Přehled 01 / Přehled 02) -->
+  <section class="page" id="pageOverview">
+    <div class="track" id="trackOverview">
+      <!-- pos 0: PROGRES -->
+      <div class="panel">
+        <div class="legend">
+          <span><i style="background:var(--done)"></i>hotovo</span>
+          <span><i style="background:var(--empty)"></i>zbývá</span>
+        </div>
+        <div id="progresList"></div>
+        <div class="empty-state" id="progresEmpty" style="display:none">Žádné úkoly k zobrazení.</div>
+      </div>
+      <!-- pos 1: Přehled ÚKOLŮ -->
       <div class="panel">
         <div class="ovtoggle" id="utOvToggle">
           <div class="ovt on" data-mode="days">Dny</div>
@@ -483,18 +511,7 @@
         <div id="utOvList"></div>
         <div class="empty-state" id="utOvEmpty" style="display:none">Zatím žádná historie úkolů.</div>
       </div>
-    </div>
-  </section>
-
-  <!-- SEKCE: NÁVYKY (Check / Zvykání si) -->
-  <section class="page active" id="secNavyky">
-    <div class="track" id="trackNavyky">
-      <div class="panel">
-        <div id="todayList0"></div>
-        <div class="empty-state" id="todayEmpty0" style="display:none">
-          Zatím žádné povinnosti.<br>Ťukni na <b style="color:var(--accent)">+</b> a přidej první.
-        </div>
-      </div>
+      <!-- pos 2: Přehled návyky 01 -->
       <div class="panel">
         <div class="legend">
           <span><i style="background:var(--done)"></i>splněno</span>
@@ -504,22 +521,7 @@
         <div id="overviewList0"></div>
         <div class="empty-state" id="overviewEmpty0" style="display:none">Žádné návyky k zobrazení.</div>
       </div>
-    </div>
-  </section>
-
-  <!-- SEKCE: VOLNO (Check / Užívání si) -->
-  <section class="page" id="secVolno">
-    <div class="track" id="trackVolno">
-      <div class="panel">
-        <div class="wipbar" id="freeBacklogBar">
-          <select class="wip-sel" id="freeBacklogSelect"></select>
-        </div>
-        <button class="blog-new" id="freeNewBacklog" type="button" style="margin-bottom:10px;">+ nový backlog</button>
-        <div id="todayList1"></div>
-        <div class="empty-state" id="todayEmpty1" style="display:none">
-          Zatím žádná volnočasovka.<br>Ťukni na <b style="color:var(--accent)">+</b> a přidej první.
-        </div>
-      </div>
+      <!-- pos 3: Přehled návyky 02 -->
       <div class="panel">
         <div class="legend">
           <span><i style="background:var(--done)"></i>splněno</span>
@@ -536,89 +538,81 @@
 <button class="fab" id="fab" aria-label="Přidat">+</button>
 
 <nav class="tabs">
-  <button class="tab" data-sec="0"><span class="ic">▤</span>Progress</button>
-  <button class="tab" data-sec="1"><span class="ic">✓</span>Tasks</button>
-  <button class="tab active" data-sec="2"><span class="ic">↻</span>Habits</button>
-  <button class="tab" data-sec="3"><span class="ic">☆</span>Free</button>
+  <button class="tab active" data-page="Today"><span class="ic">✓</span>Check</button>
+  <button class="tab" data-page="Overview"><span class="ic">▦</span>Přehled</button>
+  <button class="tab" data-page="Settings"><span class="ic">⚙</span>Data</button>
 </nav>
 
 <!-- ADD / EDIT HABIT SHEET -->
 <div class="scrim" id="sheetScrim">
   <div class="sheet" id="sheet">
-    <h2 id="sheetTitle">Nový návyk</h2>
-    <label>Název</label>
-    <input type="text" id="inName" placeholder="třeba Meditace" autocomplete="off">
-    <label>Priorita</label>
+    <input type="text" id="inName" placeholder="Název návyku" autocomplete="off">
     <div class="prio-row">
+      <span class="prio-lab">Priorita</span>
       <input type="range" id="inPrio" min="1" max="10" value="5">
       <span class="prio-val" id="prioVal">5</span>
     </div>
-    <div id="habitBacklogWrap" style="display:none">
-      <label>Backlog</label>
-      <select class="blog-pick" id="habitBacklog"></select>
-      <button class="blog-new" id="habitNewBacklog" type="button">+ nový backlog</button>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="saveHabit">Uložit</button>
+      <button class="btn btn-ghost" id="cancelSheet">Zrušit</button>
     </div>
-    <button class="btn btn-primary" id="saveHabit">Uložit</button>
-    <button class="btn btn-danger" id="deleteHabit" style="display:none">Smazat návyk</button>
-    <button class="btn btn-ghost" id="cancelSheet">Zrušit</button>
+    <button class="btn btn-danger btn-slim" id="deleteHabit" style="display:none">Smazat návyk</button>
   </div>
 </div>
 
 <!-- ADD / EDIT TASK SHEET -->
 <div class="scrim" id="taskScrim">
   <div class="sheet tall" id="taskSheet">
-    <h2 id="taskSheetTitle">Nový úkol</h2>
-    <label>Název úkolu</label>
-    <input type="text" id="taskName" placeholder="třeba Nový interiér" autocomplete="off">
-    <label>Priorita úkolu</label>
+    <input type="text" id="taskName" placeholder="Název úkolu" autocomplete="off">
     <div class="prio-row">
+      <span class="prio-lab">Priorita</span>
       <input type="range" id="taskPrio" min="1" max="10" value="5">
       <span class="prio-val" id="taskPrioVal">5</span>
     </div>
-    <div class="sublabel">
-      <label>Kroky úkolu</label>
-      <span class="hint">náročnost 1–10 = délka proužku</span>
-    </div>
     <div id="subRows"></div>
-    <button class="add-sub" id="addSub">+ další krok</button>
-    <button class="btn btn-primary" id="saveTask">Uložit</button>
-    <button class="btn btn-danger" id="deleteTask" style="display:none">Smazat úkol</button>
-    <button class="btn btn-ghost" id="cancelTask">Zrušit</button>
+    <div class="btn-row">
+      <button class="add-sub" id="addSub">+ krok</button>
+      <button class="btn btn-primary" id="saveTask">Uložit</button>
+      <button class="btn btn-ghost" id="cancelTask">Zrušit</button>
+    </div>
+    <button class="btn btn-danger btn-slim" id="deleteTask" style="display:none">Smazat úkol</button>
   </div>
 </div>
 
 <!-- ADD / EDIT ÚKOL SHEET (nová sekce) -->
 <div class="scrim" id="utScrim">
   <div class="sheet tall" id="utSheet">
-    <h2 id="utTitle">Nový úkol</h2>
-    <label>Název</label>
-    <input type="text" id="utName" placeholder="třeba Napsat blog" autocomplete="off">
+    <input type="text" id="utName" placeholder="Název úkolu" autocomplete="off">
 
-    <label>Priorita</label>
     <div class="prio-row">
+      <span class="prio-lab">Priorita</span>
       <input type="range" id="utPrio" min="1" max="10" value="1">
       <span class="prio-val" id="utPrioVal">1</span>
     </div>
 
-    <label>Termín</label>
-    <div class="seg-row" id="utDeadlineSeg">
-      <div class="seg" data-dl="none">Backlog</div>
-      <div class="seg" data-dl="today">Dnes</div>
-      <div class="seg" data-dl="tomorrow">Zítra</div>
-      <div class="seg" data-dl="date">Datum…</div>
+    <div class="field-inline">
+      <label>Termín</label>
+      <div class="seg-row seg-tight" id="utDeadlineSeg">
+        <div class="seg" data-dl="none">Backlog</div>
+        <div class="seg" data-dl="today">Dnes</div>
+        <div class="seg" data-dl="tomorrow">Zítra</div>
+        <div class="seg" data-dl="date">DD</div>
+      </div>
     </div>
     <input type="date" id="utDate" class="date-in" style="display:none">
 
-    <label>Opakování</label>
-    <div class="seg-row" id="utRepeatSeg">
-      <div class="seg" data-rep="none">Žádné</div>
-      <div class="seg" data-rep="daily">Denně</div>
-      <div class="seg" data-rep="weekly">Týdně</div>
-      <div class="seg" data-rep="biweekly">Ob týden</div>
-      <div class="seg" data-rep="monthly">Měsíčně</div>
-      <div class="seg" data-rep="quarterly">Kvartálně</div>
-      <div class="seg" data-rep="halfyear">Půlrok</div>
-      <div class="seg" data-rep="yearly">Ročně</div>
+    <div class="field-inline">
+      <label>Opakování</label>
+      <div class="seg-row seg-tight" id="utRepeatSeg">
+        <div class="seg" data-rep="none">0</div>
+        <div class="seg" data-rep="daily">d</div>
+        <div class="seg" data-rep="weekly">t</div>
+        <div class="seg" data-rep="biweekly">tt</div>
+        <div class="seg" data-rep="monthly">m</div>
+        <div class="seg" data-rep="quarterly">3m</div>
+        <div class="seg" data-rep="halfyear">6m</div>
+        <div class="seg" data-rep="yearly">Y</div>
+      </div>
     </div>
 
     <div class="bouncer-box dim" id="utBouncerBox">
@@ -635,16 +629,15 @@
       </div>
       <!-- monthly+: přesné datum -->
       <input type="date" id="utBouncerDate" class="date-in" style="display:none;margin-bottom:0">
-      <span class="hint" style="font-family:var(--mono);font-size:10px;color:var(--dim);display:block;margin-top:6px;">prázdné = počítá se ode dne splnění</span>
     </div>
 
-    <label>Backlog</label>
     <select class="blog-pick" id="utBacklog"></select>
-    <button class="blog-new" id="utNewBacklog" type="button">+ nový backlog</button>
-
-    <button class="btn btn-primary" id="utSave">Uložit</button>
-    <button class="btn btn-danger" id="utDelete" style="display:none">Smazat úkol</button>
-    <button class="btn btn-ghost" id="utCancel">Zrušit</button>
+    <div class="btn-row">
+      <button class="blog-new" id="utNewBacklog" type="button">+ backlog</button>
+      <button class="btn btn-primary" id="utSave">Uložit</button>
+      <button class="btn btn-ghost" id="utCancel">Zrušit</button>
+    </div>
+    <button class="btn btn-danger btn-slim" id="utDelete" style="display:none">Smazat úkol</button>
   </div>
 </div>
 <div class="scrim" id="setScrim">
@@ -701,13 +694,13 @@
 var KEY = "habity.v2";
 var OLDKEY = "habity.v1";
 var GRID = 90;       // čtverečků na úkol (3 řádky × 30)
-var curSection = 2;  // 0..3 – aktivní sekce (Tasky/Úkoly/Návyky/Volno), volí se tabama dole
-var curView = 0;     // 0=Check, 1=Přehled – swipe pozice, GLOBÁLNÍ (sdílená napříč sekcemi)
-var WIP_PREVIEW_MIN = 10;
+var curSection = 2;  // 0..3 – aktivní pozice, sdílená pro Check i Přehled (start na Návyky)
+var MAXSEC = 3;      // poslední pozice
+var WIP_PREVIEW_MIN = 5;
 
 var state = load();
 
-function blankState(){ return { sections:[ {habits:[],log:{}}, {habits:[],log:{},backlogs:["Free"]} ], tasks:[], backlogs:["Wip","Done"], utasks:[], daily:{}, lastRollup:null }; }
+function blankState(){ return { sections:[ {habits:[],log:{}}, {habits:[],log:{}} ], tasks:[], backlogs:["Wip","Done"], utasks:[], daily:{}, lastRollup:null }; }
 
 function normalize(o){
   if(!o || typeof o!=="object") return blankState();
@@ -716,34 +709,7 @@ function normalize(o){
   if(Array.isArray(o.sections)){
     for(var i=0;i<2;i++){
       var src = o.sections[i];
-      if(!src || !Array.isArray(src.habits)) continue;
-      var log = (src.log && typeof src.log==="object") ? src.log : {};
-      if(i===1){
-        // sekce Free: backlogy (Free vždy garantovaný a první)
-        var fbl = ["Free"];
-        if(Array.isArray(src.backlogs)){
-          src.backlogs.forEach(function(name){
-            if(typeof name==="string"){
-              var nm = name.trim();
-              if(nm && fbl.indexOf(nm)===-1) fbl.push(nm);
-            }
-          });
-        }
-        var habits1 = src.habits.filter(function(h){ return h && typeof h==="object" && typeof h.name==="string"; })
-          .map(function(h){
-            var bk = (typeof h.backlog==="string" && fbl.indexOf(h.backlog)>=0) ? h.backlog : "Free";
-            return {
-              id: h.id || ("h"+Date.now()+Math.random().toString(36).slice(2,6)),
-              name: h.name,
-              priority: (typeof h.priority==="number") ? h.priority : 5,
-              createdAt: h.createdAt || Date.now(),
-              backlog: bk
-            };
-          });
-        s.sections[1] = { habits:habits1, log:log, backlogs:fbl };
-      } else {
-        s.sections[0] = { habits:src.habits, log:log };
-      }
+      if(src && Array.isArray(src.habits)) s.sections[i] = { habits:src.habits, log:(src.log&&typeof src.log==="object")?src.log:{} };
     }
   } else if(Array.isArray(o.habits)){
     // starý v1 -> sekce 01
@@ -893,41 +859,10 @@ function habitById(si, id){
   return null;
 }
 
-/* ---- backlogy pro sekci Free (jen Check, Přehled agreguje vše napříč) ---- */
-var freeBacklogCurrent = "Free";
-function renderFreeBacklogBar(){
-  var sel = document.getElementById("freeBacklogSelect");
-  if(!sel) return;
-  var bls = state.sections[1].backlogs || ["Free"];
-  if(bls.indexOf(freeBacklogCurrent)===-1) freeBacklogCurrent = "Free";
-  sel.innerHTML = "";
-  bls.forEach(function(name){
-    var o = document.createElement("option");
-    o.value = name; o.textContent = name;
-    if(name===freeBacklogCurrent) o.selected = true;
-    sel.appendChild(o);
-  });
-}
-function fillHabitBacklogPicker(selected){
-  var sel = document.getElementById("habitBacklog");
-  if(!sel) return;
-  sel.innerHTML = "";
-  (state.sections[1].backlogs || ["Free"]).forEach(function(name){
-    var o = document.createElement("option");
-    o.value = name; o.textContent = name;
-    if(name===selected) o.selected = true;
-    sel.appendChild(o);
-  });
-}
-
 function renderTodayPanel(si){
   var list = document.getElementById("todayList"+si);
   var empty = document.getElementById("todayEmpty"+si);
   var hs = sortedHabits(si);
-  if(si===1){
-    renderFreeBacklogBar();
-    hs = hs.filter(function(h){ return h.backlog===freeBacklogCurrent; });
-  }
   list.innerHTML = "";
   empty.style.display = hs.length ? "none" : "block";
   var tk = key(today());
@@ -945,10 +880,10 @@ function renderTodayPanel(si){
     card.querySelector(".name").textContent = h.name;
     card.querySelector(".name").onclick = function(){ deleteHabitById(si, h.id); };
     card.querySelector(".tg.yes").onclick = function(){
-      setState(si, h.id, tk, getState(si,h.id,tk)==="done"?null:"done"); renderTodayPanel(si); renderOverviewPanel(si);
+      setState(si, h.id, tk, getState(si,h.id,tk)==="done"?null:"done"); renderTodayPanel(si);
     };
     card.querySelector(".tg.no").onclick = function(){
-      setState(si, h.id, tk, getState(si,h.id,tk)==="missed"?null:"missed"); renderTodayPanel(si); renderOverviewPanel(si);
+      setState(si, h.id, tk, getState(si,h.id,tk)==="missed"?null:"missed"); renderTodayPanel(si);
     };
     list.appendChild(card);
   });
@@ -977,7 +912,6 @@ function renderOverviewPanel(si){
           var nx = cycle(sIdx, hid, dkey);
           cellEl.className = "cell"+(nx?(" "+nx):"")+(dkey===tk?" today":"");
           renderHeadStat(head, sIdx, hid);
-          if(dkey===tk) renderTodayPanel(sIdx);
         };
       })(si, h.id, dk, cell);
       grid.appendChild(cell);
@@ -1044,7 +978,7 @@ function openDetail(si, id){
   document.getElementById("detail").classList.add("open");
 }
 document.getElementById("detailBack").onclick = function(){
-  document.getElementById("detail").classList.remove("open"); renderOverviewPanel(detailSection);
+  document.getElementById("detail").classList.remove("open"); renderOverview();
 };
 document.getElementById("detailEdit").onclick = function(){ if(detailHabitId) openSheet(detailSection, detailHabitId); };
 
@@ -1055,22 +989,15 @@ prioInput.oninput = function(){ prioVal.textContent = prioInput.value; };
 function openSheet(si, id){
   editingSection = si; editingId = id || null;
   var del = document.getElementById("deleteHabit");
-  var bwrap = document.getElementById("habitBacklogWrap");
   if(editingId){
     var h = habitById(si, editingId);
-    document.getElementById("sheetTitle").textContent = "Upravit návyk";
     document.getElementById("inName").value = h.name;
     prioInput.value = h.priority; prioVal.textContent = h.priority;
     del.style.display = "block";
-    if(si===1){ bwrap.style.display = "block"; fillHabitBacklogPicker(h.backlog || "Free"); }
-    else bwrap.style.display = "none";
   } else {
-    document.getElementById("sheetTitle").textContent = (si===0?"Nová povinnost":"Nová volnočasovka");
     document.getElementById("inName").value = "";
     prioInput.value = 5; prioVal.textContent = 5;
     del.style.display = "none";
-    if(si===1){ bwrap.style.display = "block"; fillHabitBacklogPicker("Free"); }
-    else bwrap.style.display = "none";
   }
   document.getElementById("sheetScrim").classList.add("open");
   setTimeout(function(){ document.getElementById("inName").focus(); }, 100);
@@ -1078,28 +1005,14 @@ function openSheet(si, id){
 function closeSheet(){ document.getElementById("sheetScrim").classList.remove("open"); }
 document.getElementById("cancelSheet").onclick = closeSheet;
 document.getElementById("sheetScrim").onclick = function(e){ if(e.target===this) closeSheet(); };
-document.getElementById("habitNewBacklog").onclick = function(){
-  var name = prompt("Název nového backlogu:");
-  if(!name) return;
-  name = name.trim();
-  if(!name) return;
-  if(!state.sections[1].backlogs) state.sections[1].backlogs = ["Free"];
-  if(state.sections[1].backlogs.indexOf(name)>=0){ toast("Backlog „"+name+"\" už existuje."); return; }
-  state.sections[1].backlogs.push(name); save();
-  fillHabitBacklogPicker(name);
-};
 document.getElementById("saveHabit").onclick = function(){
   var name = document.getElementById("inName").value.trim();
   if(!name){ document.getElementById("inName").focus(); return; }
   var prio = +prioInput.value;
-  var bk = (editingSection===1) ? (document.getElementById("habitBacklog").value || "Free") : null;
   if(editingId){
     var h = habitById(editingSection, editingId); h.name = name; h.priority = prio;
-    if(editingSection===1) h.backlog = bk;
   } else {
-    var nh = { id:"h"+Date.now()+Math.random().toString(36).slice(2,6), name:name, priority:prio, createdAt:Date.now() };
-    if(editingSection===1) nh.backlog = bk;
-    state.sections[editingSection].habits.push(nh);
+    state.sections[editingSection].habits.push({ id:"h"+Date.now()+Math.random().toString(36).slice(2,6), name:name, priority:prio, createdAt:Date.now() });
   }
   save(); closeSheet(); renderAll();
   if(document.getElementById("detail").classList.contains("open") && detailHabitId) openDetail(detailSection, detailHabitId);
@@ -1258,7 +1171,6 @@ function renderTasksPanel(){
         row.onclick = function(){
           s.done = !s.done; save();
           renderTasksPanel(); // přerovnání proužku až po renderu
-          renderProgresPanel();
         };
         body.appendChild(row);
       });
@@ -1306,7 +1218,6 @@ function renderProgresPanel(){
             cell.onclick = function(){
               sub.done = !sub.done; save();
               renderProgresPanel(); // přerovná splněné doleva
-              renderTasksPanel();
             };
           })(s);
           grid.appendChild(cell);
@@ -1359,14 +1270,12 @@ function openTaskSheet(id){
   var del = document.getElementById("deleteTask");
   if(editingTaskId){
     var t = taskById(editingTaskId);
-    document.getElementById("taskSheetTitle").textContent = "Upravit úkol";
     document.getElementById("taskName").value = t.name;
     taskPrio.value = t.priority; taskPrioVal.textContent = t.priority;
     if(t.subtasks.length) t.subtasks.forEach(function(s){ rows.appendChild(makeSubRow(s)); });
     else rows.appendChild(makeSubRow());
     del.style.display = "block";
   } else {
-    document.getElementById("taskSheetTitle").textContent = "Nový úkol";
     document.getElementById("taskName").value = "";
     taskPrio.value = 5; taskPrioVal.textContent = 5;
     rows.appendChild(makeSubRow());
@@ -1551,7 +1460,7 @@ function utComplete(t){
     t.date = null;
     t.done = true;
   }
-  save(); renderCheck(); renderUtOverview();
+  save(); renderCheck();
   pina(); // 🍹 odměna
 }
 /* ✕ Nesplněno (poctivá červená) – den zčervená + úkol na zítřek */
@@ -1559,7 +1468,7 @@ function utMiss(t){
   // missed se počítá k dnešku (den, kdy přiznávám lajdáctví)
   bumpDaily(key(today()), "missed", 1);
   t.date = key(addDays(today(),1));
-  save(); renderCheck(); renderUtOverview();
+  save(); renderCheck();
 }
 /* přesun bez penalizace */
 function utMove(t, mode){
@@ -1733,24 +1642,6 @@ document.getElementById("wipSelect").onchange = function(){
 document.getElementById("blogBack").onclick = closeBlogView;
 document.getElementById("blogSelect").onchange = function(){ blogCurrent = this.value; renderBlogView(); };
 
-/* ---- backlog dropdown pro Free (Check) – jen filtr, žádný skok jinam ---- */
-document.getElementById("freeBacklogSelect").onchange = function(){
-  freeBacklogCurrent = this.value;
-  renderTodayPanel(1);
-};
-document.getElementById("freeNewBacklog").onclick = function(){
-  var name = prompt("Název nového backlogu:");
-  if(!name) return;
-  name = name.trim();
-  if(!name) return;
-  if(!state.sections[1].backlogs) state.sections[1].backlogs = ["Free"];
-  if(state.sections[1].backlogs.indexOf(name)>=0){ toast("Backlog „"+name+"\" už existuje."); return; }
-  state.sections[1].backlogs.push(name);
-  freeBacklogCurrent = name;
-  save();
-  renderTodayPanel(1);
-};
-
 /* ---- render router pro celou Check sekci ---- */
 function renderCheck(){
   if(document.getElementById("blogView").classList.contains("open")) renderBlogView();
@@ -1922,7 +1813,6 @@ function openUtSheet(id){
 
   if(editingUtId){
     var t = utaskById(editingUtId);
-    document.getElementById("utTitle").textContent = "Upravit úkol";
     document.getElementById("utName").value = t.name;
     utPrioEl.value = t.priority; utPrioValEl.textContent = t.priority;
     // deadline
@@ -1948,7 +1838,6 @@ function openUtSheet(id){
     fillBacklogPicker(t.backlog);
     del.style.display = "block";
   } else {
-    document.getElementById("utTitle").textContent = "Nový úkol";
     document.getElementById("utName").value = "";
     utPrioEl.value = 1; utPrioValEl.textContent = 1;
     fillBacklogPicker("Wip");
@@ -2105,33 +1994,32 @@ document.getElementById("btnClearOv").onclick = function(){
   });
 };
 
-/* ---------- navigace: taby = sekce (0..3), swipe/pager = Check<->Přehled (globální) ---------- */
-var SEC_PAGES  = ["secTasky","secUkoly","secNavyky","secVolno"];
-var SEC_TRACKS = ["trackTasky","trackUkoly","trackNavyky","trackVolno"];
-var SEC_TITLES = ["Progress","Tasks","Habits","Free"];
-
-function applyViewToTrack(trackEl, animate){
-  trackEl.style.transition = animate ? "transform .25s ease" : "none";
-  trackEl.style.transform = "translateX("+(curView===0 ? "0%" : "-50%")+")";
+/* ---------- swipe mezi pozicemi (0..3) ---------- */
+function currentPageName(){
+  return document.getElementById("pageOverview").classList.contains("active") ? "Overview" : "Today";
 }
-function updateUI(){
-  SEC_TRACKS.forEach(function(id){ applyViewToTrack(document.getElementById(id), true); });
-  SEC_PAGES.forEach(function(id, i){
-    document.getElementById(id).classList.toggle("active", i===curSection);
-  });
-  document.querySelectorAll(".tab").forEach(function(t){
-    t.classList.toggle("active", +t.dataset.sec===curSection);
-  });
+function updateSectionUI(){
+  var tx = (curSection * -(100/4)) + "%";
+  var tT = document.getElementById("trackToday"), tO = document.getElementById("trackOverview");
+  tT.style.transition = "transform .25s ease"; tO.style.transition = "transform .25s ease";
+  tT.style.transform = "translateX("+tx+")"; tO.style.transform = "translateX("+tx+")";
   document.querySelectorAll("#pager .dot").forEach(function(d){
-    d.classList.toggle("on", +d.dataset.view===curView);
+    d.classList.toggle("on", +d.dataset.sec===curSection);
   });
-  document.getElementById("hTitle").textContent = SEC_TITLES[curSection];
+  var page = currentPageName();
+  var title;
+  if(curSection===0)      title = (page==="Today" ? "Tasky" : "Progres");
+  else if(curSection===1) title = (page==="Today" ? "Úkoly" : "Přehled úkolů");
+  else if(curSection===2) title = (page==="Today" ? "Návyky" : "Zvykání si");
+  else                    title = (page==="Today" ? "Volno" : "Užívání si");
+  document.getElementById("hTitle").textContent = title;
 }
 
 function attachSwipe(pageEl, trackEl){
   // Pointer events = myš i prst najednou. touch-action:pan-y nechá svislý scroll
   // prohlížeči, vodorovná gesta chytám sám.
   var x0=0,y0=0,dx=0,dy=0,dragging=false,decided=false,horizontal=false,w=0,pid=null;
+  var MAX = MAXSEC; // poslední pozice (0..3)
   pageEl.addEventListener("pointerdown", function(e){
     if(e.pointerType==="mouse" && e.button!==0) return;
     x0=e.clientX; y0=e.clientY; dx=0; dy=0;
@@ -2148,8 +2036,8 @@ function attachSwipe(pageEl, trackEl){
     }
     if(decided && horizontal){
       if(e.cancelable) e.preventDefault();
-      var base=-curView*w, d=dx;
-      if((curView===0 && d>0)||(curView===1 && d<0)) d=d*0.3; // odpor na okrajích
+      var base=-curSection*w, d=dx;
+      if((curSection===0 && d>0)||(curSection===MAX && d<0)) d=d*0.3; // odpor na okrajích
       trackEl.style.transform="translateX("+(base+d)+"px)";
     }
   });
@@ -2159,39 +2047,42 @@ function attachSwipe(pageEl, trackEl){
     pid=null;
     if(decided && horizontal){
       var threshold=w*0.22;
-      if(dx<-threshold && curView<1) curView=1;
-      else if(dx>threshold && curView>0) curView=0;
+      if(dx<-threshold && curSection<MAX) curSection++;
+      else if(dx>threshold && curSection>0) curSection--;
     }
-    updateUI();
+    updateSectionUI();
   }
   pageEl.addEventListener("pointerup", end);
   pageEl.addEventListener("pointercancel", end);
 }
-SEC_PAGES.forEach(function(id, i){
-  attachSwipe(document.getElementById(id), document.getElementById(SEC_TRACKS[i]));
-});
+attachSwipe(document.getElementById("pageToday"), document.getElementById("trackToday"));
+attachSwipe(document.getElementById("pageOverview"), document.getElementById("trackOverview"));
 
 document.querySelectorAll("#pager .dot").forEach(function(d){
-  d.onclick = function(){ curView = +d.dataset.view; updateUI(); };
+  d.onclick = function(){ curSection = +d.dataset.sec; updateSectionUI(); };
 });
 
-/* ---------- FAB (přidá do aktuální sekce) ---------- */
+/* ---------- FAB (přidá do aktuální pozice) ---------- */
 document.getElementById("fab").onclick = function(){
   if(curSection===0) openTaskSheet(null);
   else if(curSection===1) openUtSheet(null);
-  else openSheet(curSection-2, null); // sekce 2/3 -> habit sekce 0/1
+  else openSheet(curSection-2, null); // pozice 2/3 -> habit sekce 0/1
 };
 
-/* ---------- tabs (volí sekci) ---------- */
+/* ---------- tabs ---------- */
 document.querySelectorAll(".tab").forEach(function(tab){
   tab.onclick = function(){
-    curSection = +tab.dataset.sec;
-    updateUI();
+    var p = tab.dataset.page;
+    if(p==="Settings"){ openSettings(); return; }
+    document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("active", t===tab); });
+    document.getElementById("pageToday").classList.toggle("active", p==="Today");
+    document.getElementById("pageOverview").classList.toggle("active", p==="Overview");
+    document.getElementById("fab").style.display = "block";
+    if(p==="Today"){ renderTasksPanel(); renderCheck(); renderTodayPanel(0); renderTodayPanel(1); }
+    else { renderProgresPanel(); renderUtOverview(); renderOverviewPanel(0); renderOverviewPanel(1); }
+    updateSectionUI();
   };
 });
-
-/* ---------- nastavení (ozubené kolečko v headeru) ---------- */
-document.getElementById("btnSettings").onclick = openSettings;
 
 /* ---------- init ---------- */
 function renderAll(){
@@ -2201,8 +2092,7 @@ function renderAll(){
 document.getElementById("hDate").textContent = fmtLong(today());
 rollupUtasks();   // sesune propadlé úkoly a započítá červené, než vykreslíme
 renderAll();
-updateUI();
+updateSectionUI();
 </script>
-
 </body>
 </html>
