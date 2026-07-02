@@ -2108,10 +2108,13 @@ function fselSync(selectId){
   btn.textContent = opt ? opt.text : "";
 }
 
-/* mazání backlogů: Wip/Done (Tasky) a Free (Free) jsou garantované, nejdou smazat */
+/* mazání backlogů: Wip/Done (Tasky) a Free (Free) jsou garantované, nejdou smazat.
+   Smazání backlogu smaže i položky, které v něm aktuálně jsou (nedatované úkoly / návyky).
+   Datované úkoly, co v něm mají jen domovský backlog, se přesunou do Wip, ať nezmizí z kalendáře. */
 function deleteTaskBacklog(name){
   if(name==="Wip" || name==="Done") return;
   state.backlogs = state.backlogs.filter(function(n){ return n!==name; });
+  state.utasks = state.utasks.filter(function(t){ return !(t.backlog===name && t.date===null); });
   state.utasks.forEach(function(t){ if(t.backlog===name) t.backlog="Wip"; });
   save();
   var wasCurrent = (blogCurrent===name);
@@ -2127,7 +2130,11 @@ function deleteTaskBacklog(name){
 function deleteFreeBacklog(name){
   if(name==="Free") return;
   state.sections[1].backlogs = (state.sections[1].backlogs || ["Free"]).filter(function(n){ return n!==name; });
-  state.sections[1].habits.forEach(function(h){ if(h.backlog===name) h.backlog="Free"; });
+  state.sections[1].habits = state.sections[1].habits.filter(function(h){
+    if(h.backlog!==name) return true;
+    delete state.sections[1].log[h.id];
+    return false;
+  });
   if(freeBacklogCurrent===name) freeBacklogCurrent = "Free";
   save();
   renderTodayPanel(1);
@@ -2172,7 +2179,7 @@ function fselOpen(selectId, title){
       del.type = "button"; del.className = "picker-del"; del.textContent = "✕";
       del.onclick = function(e){
         e.stopPropagation();
-        askConfirm('Smazat backlog „'+it.text+'“? Položky se přesunou do výchozího backlogu.', "Smazat", function(){
+        askConfirm('Smazat backlog „'+it.text+'“? Smažou se i všechny položky, které v něm jsou.', "Smazat", function(){
           cfg.del(it.value);
           closePickerSheet();
         });
