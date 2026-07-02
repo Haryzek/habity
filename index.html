@@ -1088,7 +1088,7 @@ function openSheet(si, id){
     document.getElementById("inName").value = "";
     prioInput.value = 5; prioVal.textContent = 5;
     del.style.display = "none";
-    if(si===1){ bwrap.style.display = "block"; fillHabitBacklogPicker("Free"); }
+    if(si===1){ bwrap.style.display = "block"; fillHabitBacklogPicker(freeBacklogCurrent); }
     else bwrap.style.display = "none";
   }
   document.getElementById("sheetScrim").classList.add("open");
@@ -1983,7 +1983,8 @@ function openUtSheet(id){
   } else {
     document.getElementById("utName").value = "";
     utPrioEl.value = 1; utPrioValEl.textContent = 1;
-    fillBacklogPicker("Wip");
+    var defaultBk = document.getElementById("blogView").classList.contains("open") ? blogCurrent : "Wip";
+    fillBacklogPicker(defaultBk);
     del.style.display = "none";
   }
   refreshBouncerUI();
