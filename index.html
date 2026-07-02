@@ -280,6 +280,21 @@
   .cfm-sheet{border-radius:18px;border-bottom:1px solid var(--border);max-width:360px;animation:none;}
   .cfm-msg{font-family:var(--serif);font-size:17px;line-height:1.45;margin:2px 0 20px;}
 
+  /* compact backlog picker (náhrada nativního <select> dropdownu na mobilu) */
+  .fsel-trigger{text-align:left;font:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .picker-sheet{padding-top:14px;z-index:75;}
+  .picker-sheet h2{font-size:15px;margin:0 0 8px;}
+  .picker-list{max-height:min(56vh,420px);overflow-y:auto;border-top:1px solid var(--border);margin-bottom:10px;}
+  .picker-item{
+    display:flex;align-items:center;gap:8px;padding:6px 4px;
+    font-family:var(--serif);font-size:13px;line-height:1.2;
+    border-bottom:1px solid var(--border);cursor:pointer;
+  }
+  .picker-item:active{background:var(--surface2);}
+  .picker-dot{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--dim);flex-shrink:0;}
+  .picker-item.sel{color:var(--accent);}
+  .picker-item.sel .picker-dot{border-color:var(--accent);background:var(--accent);}
+
   /* toast */
   .toast{
     position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(8px);
@@ -471,7 +486,8 @@
       <div class="panel">
         <div class="checkDefault" id="checkDefault">
           <div class="wipbar" id="wipBar">
-            <select class="wip-sel" id="wipSelect"></select>
+            <select class="wip-sel" id="wipSelect" style="display:none"></select>
+            <button type="button" class="wip-sel fsel-trigger" id="wipSelectBtn" data-target="wipSelect"></button>
           </div>
           <div class="wip-wrap" id="wipPreview"></div>
           <div id="calList"></div>
@@ -482,7 +498,8 @@
         <div class="blogview" id="blogView">
           <div class="blog-head">
             <button class="blog-back" id="blogBack">‹ Zpět</button>
-            <select class="blog-sel" id="blogSelect"></select>
+            <select class="blog-sel" id="blogSelect" style="display:none"></select>
+            <button type="button" class="blog-sel fsel-trigger" id="blogSelectBtn" data-target="blogSelect"></button>
           </div>
           <div id="blogList"></div>
           <div class="cal-empty" id="blogEmpty" style="display:none">Tenhle backlog je prázdný.</div>
@@ -532,7 +549,8 @@
     <div class="track" id="trackVolno">
       <div class="panel">
         <div class="wipbar" id="freeBacklogBar">
-          <select class="wip-sel" id="freeBacklogSelect"></select>
+          <select class="wip-sel" id="freeBacklogSelect" style="display:none"></select>
+          <button type="button" class="wip-sel fsel-trigger" id="freeBacklogSelectBtn" data-target="freeBacklogSelect"></button>
         </div>
         <button class="blog-new" id="freeNewBacklog" type="button" style="margin-bottom:10px;">+ nový backlog</button>
         <div id="todayList1"></div>
@@ -572,7 +590,8 @@
       <span class="prio-val" id="prioVal">5</span>
     </div>
     <div id="habitBacklogWrap" style="display:none;margin-bottom:12px">
-      <select class="blog-pick" id="habitBacklog"></select>
+      <select class="blog-pick" id="habitBacklog" style="display:none"></select>
+      <button type="button" class="blog-pick fsel-trigger" id="habitBacklogBtn" data-target="habitBacklog"></button>
       <button class="blog-new" id="habitNewBacklog" type="button">+ backlog</button>
     </div>
     <div class="btn-row">
@@ -654,7 +673,8 @@
       <input type="date" id="utBouncerDate" class="date-in" style="display:none;margin-bottom:0">
     </div>
 
-    <select class="blog-pick" id="utBacklog"></select>
+    <select class="blog-pick" id="utBacklog" style="display:none"></select>
+    <button type="button" class="blog-pick fsel-trigger" id="utBacklogBtn" data-target="utBacklog"></button>
     <div class="btn-row">
       <button class="blog-new" id="utNewBacklog" type="button">+ backlog</button>
       <button class="btn btn-primary" id="utSave">Uložit</button>
@@ -682,6 +702,15 @@
     <p class="cfm-msg" id="cfmMsg"></p>
     <button class="btn btn-danger" id="cfmYes" style="margin-top:0">Potvrdit</button>
     <button class="btn btn-ghost" id="cfmNo">Zrušit</button>
+  </div>
+</div>
+
+<!-- BACKLOG PICKER (kompaktní náhrada nativního <select> dropdownu) -->
+<div class="scrim" id="pickerScrim">
+  <div class="sheet picker-sheet">
+    <h2 id="pickerTitle">Backlog</h2>
+    <div class="picker-list" id="pickerList"></div>
+    <button class="btn btn-ghost btn-slim" id="pickerCancel" style="margin-top:0">Zrušit</button>
   </div>
 </div>
 
@@ -929,6 +958,7 @@ function renderFreeBacklogBar(){
     if(name===freeBacklogCurrent) o.selected = true;
     sel.appendChild(o);
   });
+  fselSync("freeBacklogSelect");
 }
 function fillHabitBacklogPicker(selected){
   var sel = document.getElementById("habitBacklog");
@@ -940,6 +970,7 @@ function fillHabitBacklogPicker(selected){
     if(name===selected) o.selected = true;
     sel.appendChild(o);
   });
+  fselSync("habitBacklog");
 }
 
 function renderTodayPanel(si){
@@ -1696,6 +1727,7 @@ function renderCheckDefault(){
       if(name==="Wip") o.selected = true;
       wsel.appendChild(o);
     });
+    fselSync("wipSelect");
   }
   // WiP náhled – top nedatované z Wip
   var wip = backlogTasks("Wip");
@@ -1739,6 +1771,7 @@ function renderBlogView(){
     if(name===blogCurrent) o.selected = true;
     sel.appendChild(o);
   });
+  fselSync("blogSelect");
   var list = document.getElementById("blogList");
   var empty = document.getElementById("blogEmpty");
   list.innerHTML = "";
@@ -1941,6 +1974,7 @@ function fillBacklogPicker(selected){
     if(name===selected) o.selected = true;
     sel.appendChild(o);
   });
+  fselSync("utBacklog");
 }
 
 function openUtSheet(id){
@@ -2083,6 +2117,52 @@ function closeConfirm(){ document.getElementById("cfmScrim").classList.remove("o
 document.getElementById("cfmYes").onclick = function(){ var cb = cfmCb; closeConfirm(); if(cb) cb(); };
 document.getElementById("cfmNo").onclick = closeConfirm;
 document.getElementById("cfmScrim").onclick = function(e){ if(e.target===this) closeConfirm(); };
+
+/* ---- kompaktní backlog picker (náhrada nativního <select> na mobilu) ----
+   Skutečný <select> zůstává v DOMu (skrytý) jako zdroj pravdy - veškerá
+   existující logika, co čte/nastavuje .value a poslouchá "change", funguje beze změny.
+   Viditelné je jen tlačítko (.fsel-trigger), které otevře vlastní úsporný seznam. */
+function fselSync(selectId){
+  var sel = document.getElementById(selectId);
+  var btn = document.getElementById(selectId+"Btn");
+  if(!sel || !btn) return;
+  var opt = sel.options[sel.selectedIndex];
+  btn.textContent = opt ? opt.text : "";
+}
+function fselOpen(selectId, title){
+  var sel = document.getElementById(selectId);
+  if(!sel) return;
+  var items = Array.prototype.map.call(sel.options, function(o){ return {value:o.value, text:o.textContent}; });
+  items.sort(function(a,b){ return a.text.localeCompare(b.text,"cs",{sensitivity:"base"}); });
+  var current = sel.value;
+  document.getElementById("pickerTitle").textContent = title || "Backlog";
+  var list = document.getElementById("pickerList");
+  list.innerHTML = "";
+  items.forEach(function(it){
+    var row = document.createElement("div");
+    row.className = "picker-item" + (it.value===current ? " sel" : "");
+    var dot = document.createElement("span"); dot.className = "picker-dot";
+    var lab = document.createElement("span"); lab.textContent = it.text;
+    row.appendChild(dot); row.appendChild(lab);
+    row.onclick = function(){
+      closePickerSheet();
+      if(sel.value !== it.value){
+        sel.value = it.value;
+        fselSync(selectId);
+        sel.dispatchEvent(new Event("change"));
+      }
+    };
+    list.appendChild(row);
+  });
+  document.getElementById("pickerScrim").classList.add("open");
+}
+function closePickerSheet(){ document.getElementById("pickerScrim").classList.remove("open"); }
+document.getElementById("pickerCancel").onclick = closePickerSheet;
+document.getElementById("pickerScrim").onclick = function(e){ if(e.target===this) closePickerSheet(); };
+document.querySelectorAll(".fsel-trigger").forEach(function(btn){
+  btn.onclick = function(){ fselOpen(this.dataset.target, "Backlog"); };
+});
+
 function toast(msg){
   var t = document.getElementById("toast");
   t.textContent = msg; t.classList.add("show");
