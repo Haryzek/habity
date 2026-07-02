@@ -768,12 +768,7 @@ function normalize(o){
   if(Array.isArray(o.tasks)){
     s.tasks = o.tasks.filter(function(t){ return t && typeof t==="object" && typeof t.name==="string"; })
       .map(function(t){
-        return {
-          id: t.id || ("t"+Date.now()+Math.random().toString(36).slice(2,6)),
-          name: t.name,
-          priority: (typeof t.priority==="number") ? t.priority : 5,
-          createdAt: t.createdAt || Date.now(),
-          subtasks: Array.isArray(t.subtasks) ? t.subtasks.filter(function(st){ return st && typeof st.name==="string"; }).map(function(st){
+        var subtasks = Array.isArray(t.subtasks) ? t.subtasks.filter(function(st){ return st && typeof st.name==="string"; }).map(function(st){
             return {
               id: st.id || ("s"+Date.now()+Math.random().toString(36).slice(2,6)),
               name: st.name,
@@ -781,7 +776,18 @@ function normalize(o){
               cells: (typeof st.cells==="number" && st.cells>=1) ? st.cells : null,
               done: !!st.done
             };
-          }) : []
+          }) : [];
+        var isDone = subtasks.length>0 && subtasks.every(function(st){ return st.done; });
+        // completedAt: převezmi platný timestamp; u starých záloh bez pole, ale
+        // už 100% hotových, dopočítej fallback (ať se řadí, ne že by zůstal null)
+        var completedAt = (typeof t.completedAt==="number") ? t.completedAt : (isDone ? (t.createdAt||Date.now()) : null);
+        return {
+          id: t.id || ("t"+Date.now()+Math.random().toString(36).slice(2,6)),
+          name: t.name,
+          priority: (typeof t.priority==="number") ? t.priority : 5,
+          createdAt: t.createdAt || Date.now(),
+          completedAt: isDone ? completedAt : null,
+          subtasks: subtasks
         };
       });
   }
@@ -1132,6 +1138,10 @@ document.getElementById("deleteHabit").onclick = function(){ if(editingId) delet
 /* ================= ÚKOLY (Tasks / Progres) ================= */
 function sortedTasks(){
   return state.tasks.slice().sort(function(a,b){
+    var aDone = a.subtasks.length>0 && taskProgress(a)>=1;
+    var bDone = b.subtasks.length>0 && taskProgress(b)>=1;
+    if(aDone!==bDone) return aDone ? 1 : -1;           // hotové na konec
+    if(aDone && bDone) return (b.completedAt||0)-(a.completedAt||0); // nejnovější nahoře
     if(b.priority!==a.priority) return b.priority-a.priority;
     return a.createdAt-b.createdAt;
   });
@@ -1145,6 +1155,14 @@ function taskProgress(task){
   var tot=0, done=0;
   task.subtasks.forEach(function(s){ tot+=s.weight; if(s.done) done+=s.weight; });
   return tot>0 ? done/tot : 0;
+}
+/* nastaví/smaže completedAt podle aktuálního stavu (100% = timestamp, jinak null).
+   Volá se po každé změně subtask.done, ať timestamp neusne na starý hodnotě
+   a řazení dokončených (nejnovější nahoře) sedí s reálným momentem dokončení. */
+function updateTaskCompletedAt(task){
+  var isDone = task.subtasks.length>0 && taskProgress(task)>=1;
+  if(isDone && !task.completedAt) task.completedAt = Date.now();
+  else if(!isDone && task.completedAt) task.completedAt = null;
 }
 /* rozdělení GRID čtverečků mezi subtasky metodou největších zbytků.
    Subtask s cells!=null dostane přesně cells čtverečků (pevná hodnota).
@@ -1220,6 +1238,7 @@ function renderTasksPanel(){
 
   ts.forEach(function(task){
     var pct = Math.round(taskProgress(task)*100);
+    var isDone = task.subtasks.length>0 && pct>=100;
     var c = document.createElement("div");
     c.className = "taskc" + (expanded[task.id] ? " open" : "");
 
@@ -1229,7 +1248,7 @@ function renderTasksPanel(){
       '<span class="chev">›</span>'+
       '<span class="name"></span>'+
       '<span class="prio">P'+task.priority+'</span>'+
-      '<span class="pct">'+pct+'%</span>';
+      '<span class="pct">'+(isDone?"🍹":pct+"%")+'</span>';
     head.querySelector(".name").textContent = task.name;
     head.onclick = function(){
       expanded[task.id] = !expanded[task.id];
@@ -1269,7 +1288,7 @@ function renderTasksPanel(){
         row.innerHTML = '<div class="box">'+(s.done?"✓":"")+'</div><span class="sname"></span><span class="sw">'+s.weight+'</span>';
         row.querySelector(".sname").textContent = s.name;
         row.onclick = function(){
-          s.done = !s.done; save();
+          s.done = !s.done; updateTaskCompletedAt(task); save();
           renderTasksPanel(); // přerovnání proužku až po renderu
           renderProgresPanel();
         };
@@ -1298,9 +1317,10 @@ function renderProgresPanel(){
   ts.forEach(function(task){
     var block = document.createElement("div"); block.className = "hblock";
     var head = document.createElement("div"); head.className = "hhead";
+    var isDone = task.subtasks.length>0 && taskProgress(task)>=1;
     head.innerHTML = '<span class="name"></span><span class="prio">P'+task.priority+'</span><span class="stat"></span>';
     head.querySelector(".name").textContent = task.name;
-    head.querySelector(".stat").textContent = Math.round(taskProgress(task)*100)+"%";
+    head.querySelector(".stat").textContent = isDone ? "🍹" : Math.round(taskProgress(task)*100)+"%";
     head.style.cursor = "default";
     block.appendChild(head);
 
@@ -1317,7 +1337,7 @@ function renderProgresPanel(){
           cell.className = "cell "+cls;
           (function(sub){
             cell.onclick = function(){
-              sub.done = !sub.done; save();
+              sub.done = !sub.done; updateTaskCompletedAt(task); save();
               renderProgresPanel(); // přerovná splněné doleva
               renderTasksPanel();
             };
@@ -1416,8 +1436,11 @@ document.getElementById("saveTask").onclick = function(){
   if(editingTaskId){
     var t = taskById(editingTaskId);
     t.name = name; t.priority = prio; t.subtasks = subs;
+    updateTaskCompletedAt(t);
   } else {
-    state.tasks.push({ id:"t"+Date.now()+Math.random().toString(36).slice(2,6), name:name, priority:prio, createdAt:Date.now(), subtasks:subs });
+    var nt = { id:"t"+Date.now()+Math.random().toString(36).slice(2,6), name:name, priority:prio, createdAt:Date.now(), completedAt:null, subtasks:subs };
+    updateTaskCompletedAt(nt);
+    state.tasks.push(nt);
   }
   save(); closeTaskSheet(); renderTasksPanel(); renderProgresPanel();
 };
