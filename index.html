@@ -746,8 +746,7 @@
                 repeat:"none"|"daily"|"weekly"|"biweekly"|"monthly"|"quarterly"|"halfyear"|"yearly",
                 bouncer:null|{dow:0-6}|{date:"YYYY-MM-DD"},
                 done:false} ],
-     daily: { "YYYY-MM-DD": {done:n, missed:n} },  // agregát pro Přehled
-     lastRollup: "YYYY-MM-DD"|null
+     daily: { "YYYY-MM-DD": {done:n, missed:n} }  // agregát pro Přehled
    }
    Swipe pozice: 0=Tasky/Progres, 1=Úkoly(Check), 2=Návyky, 3=Volno            */
 var KEY = "habity.v2";
@@ -759,7 +758,7 @@ var WIP_PREVIEW_MIN = 5;
 
 var state = load();
 
-function blankState(){ return { sections:[ {habits:[],log:{}}, {habits:[],log:{},backlogs:["Free"]} ], tasks:[], backlogs:["Wip","Done"], utasks:[], daily:{}, lastRollup:null }; }
+function blankState(){ return { sections:[ {habits:[],log:{}}, {habits:[],log:{},backlogs:["Free"]} ], tasks:[], backlogs:["Wip","Done"], utasks:[], daily:{} }; }
 
 function normalize(o){
   if(!o || typeof o!=="object") return blankState();
@@ -881,8 +880,6 @@ function normalize(o){
       }
     });
   }
-  if(typeof o.lastRollup==="string" && /^\d{4}-\d{2}-\d{2}$/.test(o.lastRollup)) s.lastRollup = o.lastRollup;
-
   return s;
 }
 
@@ -1643,32 +1640,6 @@ function utMove(t, mode){
   save(); renderCheck();
 }
 
-/* ---- auto-rollup propadlých úkolů (běží při otevření) ----
-   Ne-repeat propadlý (date < dnešek, není Done): +1 missed k propadlému dni,
-     sesun na dnešek. Jen JEDNA červená za libovolně dlouhý propad.
-   Repeat propadlý: sesun na dnešek, BEZ červené.
-   Dnešek a budoucnost se nechávají být.                                  */
-function rollupUtasks(){
-  var tk = key(today());
-  var t0 = today();
-  var changed = false;
-  state.utasks.forEach(function(u){
-    if(u.date===null) return;                 // nedatovaný = v backlogu, netýká se
-    if(u.backlog==="Done") return;            // splněný archiv
-    var d = parseKey(u.date);
-    if(d >= t0) return;                        // dnešek a budoucnost posvátné
-    // propadlý úkol z minulosti
-    if(u.repeat==="none"){
-      bumpDaily(u.date, "missed", 1);          // červená k propadlému dni
-    }
-    u.date = tk;                               // sesun na dnešek (repeat i ne-repeat)
-    changed = true;
-  });
-  state.lastRollup = tk;
-  save();                                      // uložíme i lastRollup
-  return changed;
-}
-
 /* ---- render: jeden řádek úkolu ---- */
 function makeUtaskRow(t, ctx){
   // ctx: "cal" (kalendář) | "backlog"
@@ -2298,7 +2269,7 @@ document.getElementById("fileImport").onchange = function(e){
 };
 document.getElementById("btnClearOv").onclick = function(){
   askConfirm("Vymazat celou historii úkolů (zelené i červené čtverečky v Přehledu)? Úkoly samotné to nesmaže, jen jejich stopy v Přehledu.", "Vymazat", function(){
-    state.daily = {}; state.lastRollup = null;
+    state.daily = {};
     save(); closeSettings(); renderAll();
     toast("Historie úkolů vymazána.");
   });
@@ -2416,7 +2387,6 @@ function renderAll(){
   renderProgresPanel(); renderUtOverview(); renderOverviewPanel(0); renderOverviewPanel(1);
 }
 document.getElementById("hDate").textContent = fmtLong(today());
-rollupUtasks();   // sesune propadlé úkoly a započítá červené, než vykreslíme
 renderAll();
 updateUI();
 </script>
