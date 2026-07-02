@@ -295,11 +295,12 @@
     font-size:96px;z-index:90;pointer-events:none;opacity:0;
     filter:drop-shadow(0 6px 16px rgba(0,0,0,.5));
   }
-  .pina.pop{animation:pinapop .9s cubic-bezier(.2,.8,.3,1) forwards;}
+  .pina.pop{animation:pinapop 1.9s cubic-bezier(.2,.8,.3,1) forwards;}
   @keyframes pinapop{
     0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(-12deg);}
-    25%{opacity:1;transform:translate(-50%,-50%) scale(1.25) rotate(6deg);}
-    55%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-3deg);}
+    12%{opacity:1;transform:translate(-50%,-50%) scale(1.25) rotate(6deg);}
+    26%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-3deg);}
+    74%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-3deg);}
     100%{opacity:0;transform:translate(-50%,-58%) scale(1.05) rotate(0deg);}
   }
 
@@ -2069,7 +2070,36 @@ function pina(){
   void p.offsetWidth; // restart animace i při rychlém klikání
   p.classList.add("pop");
   clearTimeout(p._timer);
-  p._timer = setTimeout(function(){ p.classList.remove("pop"); }, 900);
+  p._timer = setTimeout(function(){ p.classList.remove("pop"); }, 1900);
+  speakPina();
+}
+
+/* 🗣️ hlasová odměna – náhodná hláška, systémový TTS hlas (cs-CZ pokud dostupný) */
+var PINA_LINES = ["Dej si piňu!","Šikovnej osel!","Král prdele!","Hustý, vole!","To je na piňu!","Híhá!"];
+var pinaCsVoice = null, pinaVoicesReady = false;
+function loadPinaVoice(){
+  if(!window.speechSynthesis) return;
+  var voices = speechSynthesis.getVoices();
+  if(!voices.length) return;
+  pinaCsVoice = voices.find(function(v){ return v.lang==="cs-CZ"; })
+             || voices.find(function(v){ return v.lang && v.lang.indexOf("cs")===0; })
+             || null;
+  pinaVoicesReady = true;
+}
+if(window.speechSynthesis){
+  loadPinaVoice();
+  speechSynthesis.onvoiceschanged = loadPinaVoice;
+}
+function speakPina(){
+  if(!window.speechSynthesis) return; // starý prohlížeč – prostě ticho, žádnej crash
+  if(!pinaVoicesReady) loadPinaVoice();
+  var line = PINA_LINES[Math.floor(Math.random()*PINA_LINES.length)];
+  var u = new SpeechSynthesisUtterance(line);
+  u.lang = "cs-CZ";
+  if(pinaCsVoice) u.voice = pinaCsVoice;
+  u.rate = 1.05; u.pitch = 1.0;
+  speechSynthesis.cancel(); // ať se rychlý klikání nefrontuje na sebe
+  speechSynthesis.speak(u);
 }
 
 /* ---------- SETTINGS / export-import ---------- */
