@@ -306,6 +306,8 @@
     margin-right:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#15120E;
   }
   .picker-check.on{background:var(--accent);border-color:var(--accent);}
+  .picker-item.picker-multi{padding:8px 4px;}
+  .picker-multi .picker-check{margin-right:30px;}
   .blog-group-head{display:flex;align-items:center;gap:10px;margin:16px 0 9px;}
   .blog-group-head:first-child{margin-top:6px;}
   .blog-group-head .bl{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.5px;flex-shrink:0;text-transform:uppercase;}
@@ -505,12 +507,23 @@
   .dur-labels{font-family:var(--mono);font-size:12px;color:var(--accent);text-align:center;margin-bottom:12px;}
 
   .free-filter-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;}
+  .ff-foot{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-top:12px;padding-top:10px;border-top:1px solid var(--border);
+  }
   .ff-reset{
     background:var(--surface);border:1px solid var(--border);border-radius:10px;
-    padding:9px 11px;cursor:pointer;flex-shrink:0;align-self:flex-start;
+    padding:7px 14px;cursor:pointer;flex-shrink:0;
     font-family:var(--mono);font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;
   }
   .ff-reset:active{background:var(--surface2);}
+  .ff-close{
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    width:44px;height:36px;cursor:pointer;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--dim);font-size:22px;line-height:1;
+  }
+  .ff-close:active{background:var(--surface2);}
   .free-filter{background:var(--surface);border:1px solid var(--border);border-radius:10px;flex:1;min-width:0;}
   .free-filter .tag-group{margin-bottom:8px;}
   .free-filter .tag-chip{padding:4px 9px;font-size:11px;}
@@ -1143,14 +1156,6 @@ function renderFreeFilterBar(){
   var f = state.freeFilter;
   wrap.innerHTML = "";
 
-  var reset = document.createElement("button");
-  reset.type = "button"; reset.className = "ff-reset"; reset.textContent = "RESET";
-  reset.onclick = function(){
-    f.tags = {}; f.funMin = 1; f.durationMin = 0; f.durationMax = 16;
-    save(); renderFreeFilterBar(); refreshFreeLists();
-  };
-  wrap.appendChild(reset);
-
   var box = document.createElement("div");
   box.className = "free-filter" + (f.expanded ? " ff-open" : "");
   wrap.appendChild(box);
@@ -1235,6 +1240,23 @@ function renderFreeFilterBar(){
     apply();
   });
   durBox.appendChild(durLab); durBox.appendChild(slider); body.appendChild(durBox);
+
+  var foot = document.createElement("div"); foot.className = "ff-foot";
+  var reset = document.createElement("button");
+  reset.type = "button"; reset.className = "ff-reset"; reset.textContent = "Reset";
+  reset.onclick = function(e){
+    e.stopPropagation();
+    f.tags = {}; f.funMin = 1; f.durationMin = 0; f.durationMax = 16;
+    save(); renderFreeFilterBar(); refreshFreeLists();
+  };
+  var close = document.createElement("button");
+  close.type = "button"; close.className = "ff-close"; close.textContent = "˄";
+  close.onclick = function(e){
+    e.stopPropagation();
+    f.expanded = false; save(); renderFreeFilterBar();
+  };
+  foot.appendChild(reset); foot.appendChild(close);
+  body.appendChild(foot);
 
   box.appendChild(body);
 }
@@ -2468,7 +2490,7 @@ function fselOpen(selectId, title){
   items.forEach(function(it){
     var row = document.createElement("div");
     var isSel = multi ? (working.indexOf(it.value)>=0) : (it.value===current);
-    row.className = "picker-item" + (isSel ? " sel" : "");
+    row.className = "picker-item" + (multi ? " picker-multi" : "") + (isSel ? " sel" : "");
     if(multi){
       var chk = document.createElement("span");
       chk.className = "picker-check" + (isSel ? " on" : "");
@@ -2483,9 +2505,12 @@ function fselOpen(selectId, title){
       };
       row.appendChild(chk);
     }
-    var dot = document.createElement("span"); dot.className = "picker-dot";
     var lab = document.createElement("span"); lab.className = "picker-label"; lab.textContent = it.text;
-    row.appendChild(dot); row.appendChild(lab);
+    if(!multi){
+      var dot = document.createElement("span"); dot.className = "picker-dot";
+      row.appendChild(dot);
+    }
+    row.appendChild(lab);
     row.onclick = function(){
       closePickerSheet();
       if(multi){
