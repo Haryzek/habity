@@ -301,6 +301,15 @@
     padding:3px 6px;cursor:pointer;flex-shrink:0;
   }
   .picker-del:active{color:var(--missed);}
+  .picker-check{
+    width:16px;height:16px;border-radius:4px;border:1.5px solid var(--dim);flex-shrink:0;
+    margin-right:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#15120E;
+  }
+  .picker-check.on{background:var(--accent);border-color:var(--accent);}
+  .blog-group-head{display:flex;align-items:center;gap:10px;margin:16px 0 9px;}
+  .blog-group-head:first-child{margin-top:6px;}
+  .blog-group-head .bl{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.5px;flex-shrink:0;text-transform:uppercase;}
+  .blog-group-head .bline{flex:1;height:1px;background:var(--border);}
 
   /* toast */
   .toast{
@@ -495,7 +504,14 @@
   }
   .dur-labels{font-family:var(--mono);font-size:12px;color:var(--accent);text-align:center;margin-bottom:12px;}
 
-  .free-filter{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;}
+  .free-filter-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;}
+  .ff-reset{
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    padding:9px 11px;cursor:pointer;flex-shrink:0;align-self:flex-start;
+    font-family:var(--mono);font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;
+  }
+  .ff-reset:active{background:var(--surface2);}
+  .free-filter{background:var(--surface);border:1px solid var(--border);border-radius:10px;flex:1;min-width:0;}
   .free-filter .tag-group{margin-bottom:8px;}
   .free-filter .tag-chip{padding:4px 9px;font-size:11px;}
   .free-filter .dur-labels{margin-bottom:2px;}
@@ -576,7 +592,7 @@
         <div class="checkDefault" id="checkDefault">
           <div class="wipbar" id="wipBar">
             <select class="wip-sel" id="wipSelect" style="display:none"></select>
-            <button type="button" class="wip-sel fsel-trigger" id="wipSelectBtn" data-target="wipSelect" data-scope="tasks"></button>
+            <button type="button" class="wip-sel fsel-trigger" id="wipSelectBtn" data-target="wipSelect" data-scope="tasks" data-multi="1"></button>
           </div>
           <div class="wip-wrap" id="wipPreview"></div>
           <div id="calList"></div>
@@ -588,7 +604,7 @@
           <div class="blog-head">
             <button class="blog-back" id="blogBack">‹ Zpět</button>
             <select class="blog-sel" id="blogSelect" style="display:none"></select>
-            <button type="button" class="blog-sel fsel-trigger" id="blogSelectBtn" data-target="blogSelect" data-scope="tasks"></button>
+            <button type="button" class="blog-sel fsel-trigger" id="blogSelectBtn" data-target="blogSelect" data-scope="tasks" data-multi="1"></button>
           </div>
           <div id="blogList"></div>
           <div class="cal-empty" id="blogEmpty" style="display:none">Tenhle backlog je prázdný.</div>
@@ -637,7 +653,7 @@
   <section class="page" id="secVolno">
     <div class="track" id="trackVolno">
       <div class="panel">
-        <div class="free-filter" id="freeFilterBar"></div>
+        <div class="free-filter-row" id="freeFilterBar"></div>
         <div id="todayList1"></div>
         <div class="empty-state" id="todayEmpty1" style="display:none">
           Zatím žádná volnočasovka.<br>Ťukni na <b style="color:var(--accent)">+</b> a přidej první.
@@ -802,6 +818,10 @@
   <div class="sheet picker-sheet">
     <h2 id="pickerTitle">Backlog</h2>
     <div class="picker-list" id="pickerList"></div>
+    <div class="btn-row" id="pickerMultiFoot" style="display:none">
+      <button class="btn btn-ghost btn-slim" id="pickerMultiCancel" style="margin-top:0">Zrušit</button>
+      <button class="btn btn-primary btn-slim" id="pickerMultiOk" style="margin-top:0">Potvrdit</button>
+    </div>
     <button class="btn btn-ghost btn-slim" id="pickerCancel" style="margin-top:0">Zrušit</button>
   </div>
 </div>
@@ -857,6 +877,7 @@ function blankState(){
   return {
     sections:[ {habits:[],log:{}}, {habits:[],log:{}} ],
     tasks:[], backlogs:["Wip","Done"], utasks:[], daily:{},
+    taskBacklogSel:["Wip"],
     freeFilter:{ tags:{}, durationMin:0, durationMax:16, funMin:1, expanded:false }
   };
 }
@@ -949,6 +970,13 @@ function normalize(o){
     });
   }
   s.backlogs = bl;
+  var tbs = [];
+  if(Array.isArray(o.taskBacklogSel)){
+    o.taskBacklogSel.forEach(function(name){
+      if(typeof name==="string" && bl.indexOf(name)>=0 && tbs.indexOf(name)===-1) tbs.push(name);
+    });
+  }
+  s.taskBacklogSel = tbs.length ? tbs : ["Wip"];
 
   var REPEATS = ["none","daily","weekly","biweekly","monthly","quarterly","halfyear","yearly"];
   if(Array.isArray(o.utasks)){
@@ -1113,8 +1141,19 @@ function renderFreeFilterBar(){
   var wrap = document.getElementById("freeFilterBar");
   if(!wrap) return;
   var f = state.freeFilter;
-  wrap.classList.toggle("ff-open", !!f.expanded);
   wrap.innerHTML = "";
+
+  var reset = document.createElement("button");
+  reset.type = "button"; reset.className = "ff-reset"; reset.textContent = "RESET";
+  reset.onclick = function(){
+    f.tags = {}; f.funMin = 1; f.durationMin = 0; f.durationMax = 16;
+    save(); renderFreeFilterBar(); refreshFreeLists();
+  };
+  wrap.appendChild(reset);
+
+  var box = document.createElement("div");
+  box.className = "free-filter" + (f.expanded ? " ff-open" : "");
+  wrap.appendChild(box);
 
   var head = document.createElement("div"); head.className = "ff-head";
   var cnt = freeFilterActiveCount();
@@ -1122,10 +1161,13 @@ function renderFreeFilterBar(){
   head.onclick = function(){
     f.expanded = !f.expanded; save(); renderFreeFilterBar();
   };
-  wrap.appendChild(head);
+  box.appendChild(head);
   if(!f.expanded) return;
 
   var body = document.createElement("div"); body.className = "ff-body";
+  body.onclick = function(e){
+    if(e.target===body){ f.expanded = false; save(); renderFreeFilterBar(); }
+  };
 
   TAG_GROUPS.forEach(function(g, gi){
     var sel = f.tags[gi] || [];
@@ -1194,8 +1236,16 @@ function renderFreeFilterBar(){
   });
   durBox.appendChild(durLab); durBox.appendChild(slider); body.appendChild(durBox);
 
-  wrap.appendChild(body);
+  box.appendChild(body);
 }
+document.addEventListener("pointerdown", function(e){
+  var f = state.freeFilter;
+  if(!f || !f.expanded) return;
+  var bar = document.getElementById("freeFilterBar");
+  if(bar && !bar.contains(e.target)){
+    f.expanded = false; save(); renderFreeFilterBar();
+  }
+});
 
 function renderTodayPanel(si){
   var list = document.getElementById("todayList"+si);
@@ -1990,28 +2040,60 @@ function renderCheckDefault(){
 
 /* ---- render: backlog view ---- */
 var blogCurrent = "Wip";
+function taskSelNames(){
+  var s = (state.taskBacklogSel && state.taskBacklogSel.length) ? state.taskBacklogSel : [blogCurrent];
+  var out = s.filter(function(n){ return state.backlogs.indexOf(n)>=0; });
+  return out.length ? out : ["Wip"];
+}
 function renderBlogView(){
+  var names = taskSelNames();
   var sel = document.getElementById("blogSelect");
   // naplň dropdown
   sel.innerHTML = "";
   state.backlogs.forEach(function(name){
     var o = document.createElement("option");
     o.value = name; o.textContent = name;
-    if(name===blogCurrent) o.selected = true;
+    if(name===names[0]) o.selected = true;
     sel.appendChild(o);
   });
   fselSync("blogSelect");
+  var btn = document.getElementById("blogSelectBtn");
+  if(btn) btn.textContent = names.length>1 ? (names.length+" vybrané") : names[0];
+  var ordered = names.slice().sort(function(a,b){ return a.localeCompare(b,"cs",{sensitivity:"base"}); });
   var list = document.getElementById("blogList");
   var empty = document.getElementById("blogEmpty");
   list.innerHTML = "";
-  var items = backlogTasks(blogCurrent);
-  empty.style.display = items.length ? "none" : "block";
-  items.forEach(function(t){ list.appendChild(makeUtaskRow(t,"backlog")); });
+  var total = 0;
+  ordered.forEach(function(nm){
+    var items = backlogTasks(nm);
+    if(ordered.length>1){
+      var gh = document.createElement("div"); gh.className = "blog-group-head";
+      gh.innerHTML = '<span class="bl"></span><span class="bline"></span>';
+      gh.querySelector(".bl").textContent = nm;
+      list.appendChild(gh);
+    }
+    items.forEach(function(t){ list.appendChild(makeUtaskRow(t,"backlog")); });
+    total += items.length;
+  });
+  empty.style.display = total ? "none" : "block";
+}
+function applyTaskBacklogMulti(names){
+  var uniq = [];
+  names.forEach(function(n){ if(state.backlogs.indexOf(n)>=0 && uniq.indexOf(n)===-1) uniq.push(n); });
+  if(!uniq.length) uniq = ["Wip"];
+  state.taskBacklogSel = uniq;
+  blogCurrent = uniq[0];
+  save();
+  document.getElementById("checkDefault").classList.add("hide");
+  document.getElementById("blogView").classList.add("open");
+  renderBlogView();
 }
 
 /* ---- přepínání default <-> backlog view ---- */
 function openBlogView(name){
   blogCurrent = name || "Wip";
+  state.taskBacklogSel = [blogCurrent];
+  save();
   document.getElementById("checkDefault").classList.add("hide");
   document.getElementById("blogView").classList.add("open");
   renderBlogView();
@@ -2024,11 +2106,11 @@ function closeBlogView(){
 // dropdown na hlavní stránce: volba jiného backlogu než Wip = skok do backlog view
 document.getElementById("wipSelect").onchange = function(){
   var name = this.value;
-  if(name==="Wip"){ this.selectedIndex = 0; return; } // Wip = jsi doma, nikam neskákej
+  if(name==="Wip"){ this.selectedIndex = 0; state.taskBacklogSel = ["Wip"]; save(); return; } // Wip = jsi doma, nikam neskákej
   openBlogView(name);
 };
 document.getElementById("blogBack").onclick = closeBlogView;
-document.getElementById("blogSelect").onchange = function(){ blogCurrent = this.value; renderBlogView(); };
+document.getElementById("blogSelect").onchange = function(){ openBlogView(this.value); };
 
 /* ---- render router pro celou Check sekci ---- */
 function renderCheck(){
@@ -2349,6 +2431,10 @@ function deleteTaskBacklog(name){
   state.backlogs = state.backlogs.filter(function(n){ return n!==name; });
   state.utasks = state.utasks.filter(function(t){ return !(t.backlog===name && t.date===null); });
   state.utasks.forEach(function(t){ if(t.backlog===name) t.backlog="Wip"; });
+  if(Array.isArray(state.taskBacklogSel)){
+    state.taskBacklogSel = state.taskBacklogSel.filter(function(n){ return n!==name; });
+    if(!state.taskBacklogSel.length) state.taskBacklogSel = ["Wip"];
+  }
   save();
   var wasCurrent = (blogCurrent===name);
   if(wasCurrent) blogCurrent = "Wip";
@@ -2369,20 +2455,48 @@ function fselOpen(selectId, title){
   if(!sel) return;
   var triggerBtn = document.getElementById(selectId+"Btn");
   var cfg = BACKLOG_SCOPES[triggerBtn ? triggerBtn.dataset.scope : ""];
+  var multi = !!(triggerBtn && triggerBtn.dataset.multi==="1");
   var items = Array.prototype.map.call(sel.options, function(o){ return {value:o.value, text:o.textContent}; });
   items.sort(function(a,b){ return a.text.localeCompare(b.text,"cs",{sensitivity:"base"}); });
   var current = sel.value;
   document.getElementById("pickerTitle").textContent = title || "Backlog";
+  var working = multi ? taskSelNames().slice() : null;
+  var multiFoot = document.getElementById("pickerMultiFoot");
+  var singleCancel = document.getElementById("pickerCancel");
   var list = document.getElementById("pickerList");
   list.innerHTML = "";
   items.forEach(function(it){
     var row = document.createElement("div");
-    row.className = "picker-item" + (it.value===current ? " sel" : "");
+    var isSel = multi ? (working.indexOf(it.value)>=0) : (it.value===current);
+    row.className = "picker-item" + (isSel ? " sel" : "");
+    if(multi){
+      var chk = document.createElement("span");
+      chk.className = "picker-check" + (isSel ? " on" : "");
+      chk.textContent = isSel ? "✓" : "";
+      chk.onclick = function(e){
+        e.stopPropagation();
+        var idx = working.indexOf(it.value);
+        if(idx>=0) working.splice(idx,1); else working.push(it.value);
+        var on = working.indexOf(it.value)>=0;
+        chk.classList.toggle("on", on); chk.textContent = on ? "✓" : "";
+        row.classList.toggle("sel", on);
+      };
+      row.appendChild(chk);
+    }
     var dot = document.createElement("span"); dot.className = "picker-dot";
     var lab = document.createElement("span"); lab.className = "picker-label"; lab.textContent = it.text;
     row.appendChild(dot); row.appendChild(lab);
     row.onclick = function(){
       closePickerSheet();
+      if(multi){
+        if(selectId==="wipSelect" && it.value==="Wip"){
+          state.taskBacklogSel = ["Wip"]; sel.value = "Wip"; fselSync(selectId); save();
+          if(document.getElementById("blogView").classList.contains("open")) closeBlogView();
+        } else {
+          openBlogView(it.value);
+        }
+        return;
+      }
       if(sel.value !== it.value){
         sel.value = it.value;
         fselSync(selectId);
@@ -2403,6 +2517,18 @@ function fselOpen(selectId, title){
     }
     list.appendChild(row);
   });
+  if(multi){
+    multiFoot.style.display = "";
+    singleCancel.style.display = "none";
+    document.getElementById("pickerMultiOk").onclick = function(){
+      closePickerSheet();
+      applyTaskBacklogMulti(working);
+    };
+    document.getElementById("pickerMultiCancel").onclick = closePickerSheet;
+  } else {
+    multiFoot.style.display = "none";
+    singleCancel.style.display = "";
+  }
   document.getElementById("pickerScrim").classList.add("open");
 }
 function closePickerSheet(){ document.getElementById("pickerScrim").classList.remove("open"); }
