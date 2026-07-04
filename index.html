@@ -1275,7 +1275,7 @@ function renderTodayPanel(si){
     card.className = "card";
     card.innerHTML =
       '<div class="name"></div>'+
-      '<span class="prio">P'+h.priority+'</span>'+
+      '<span class="prio">'+(si===1?"Z":"P")+h.priority+'</span>'+
       '<div class="toggles">'+
         '<div class="tg yes'+(st==="done"?" on":"")+'">✓</div>'+
         '<div class="tg no'+(st==="missed"?" on":"")+'">✕</div>'+
@@ -1322,7 +1322,7 @@ function renderOverviewPanel(si){
       grid.appendChild(cell);
     }
     head.innerHTML =
-      '<span class="name"></span><span class="prio">P'+h.priority+'</span>'+
+      '<span class="name"></span><span class="prio">'+(si===1?"Z":"P")+h.priority+'</span>'+
       '<span class="stat"></span><span class="chev">›</span>';
     head.querySelector(".name").textContent = h.name;
     head.querySelector(".stat").textContent = doneCount+"/90";
