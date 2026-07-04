@@ -1121,10 +1121,7 @@ function matchesFreeFilter(habit, filter){
   for(var gi=0; gi<TAG_GROUPS.length; gi++){
     var sel = filter.tags[gi];
     if(!sel || !sel.length) continue;
-    var g = TAG_GROUPS[gi];
-    var habitTagsInGroup = habit.tags.filter(function(tg){ return g.tags.indexOf(tg)>=0; });
-    if(!habitTagsInGroup.length) continue;
-    var overlap = habitTagsInGroup.some(function(tg){ return sel.indexOf(tg)>=0; });
+    var overlap = habit.tags.some(function(tg){ return sel.indexOf(tg)>=0; });
     if(!overlap) return false;
   }
   var fMax = filter.durationMax>=16 ? Infinity : filter.durationMax;
