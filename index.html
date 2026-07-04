@@ -1133,25 +1133,50 @@ function durationLabel(min,max){
 function normSearchText(s){
   return String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
 }
-// decentně fuzzy: přímý substring má přednost, jinak fuzzy podsekvence znaků (překlepy/přeskočená písmena OK)
-function fuzzyWordMatch(word, text){
-  if(!word) return true;
-  if(text.indexOf(word)>=0) return true;
-  var ti=0;
-  for(var wi=0; wi<word.length; wi++){
-    var ch = word[wi];
-    var found = false;
-    while(ti<text.length){ if(text[ti]===ch){ found=true; ti++; break; } ti++; }
-    if(!found) return false;
+function levenshtein(a, b){
+  var m = a.length, n = b.length;
+  if(m===0) return n; if(n===0) return m;
+  var prev = new Array(n+1), cur = new Array(n+1);
+  for(var j=0;j<=n;j++) prev[j]=j;
+  for(var i=1;i<=m;i++){
+    cur[0]=i;
+    for(var j2=1;j2<=n;j2++){
+      var cost = a[i-1]===b[j2-1] ? 0 : 1;
+      cur[j2] = Math.min(prev[j2]+1, cur[j2-1]+1, prev[j2-1]+cost);
+    }
+    var tmp=prev; prev=cur; cur=tmp;
   }
-  return true;
+  return prev[n];
+}
+function maxEditsFor(len){
+  if(len<=3) return 0;
+  if(len<=6) return 1;
+  return 2;
+}
+function tokenizeSearch(text){
+  return text.split(/[^a-z0-9]+/).filter(Boolean);
+}
+// zpřesněná fuzzy: substring má přednost, jinak malá editační vzdálenost (Levenshtein) vůči
+// jednotlivým slovům v názvu/tazích – škáluje se podle délky hledaného slova, krátká slova
+// (≤3 znaky) musí sedět přesně, ať se nechytají náhodné shody.
+function fuzzyWordMatch(word, hayFull, hayTokens){
+  if(!word) return true;
+  if(hayFull.indexOf(word)>=0) return true;
+  var maxEdits = maxEditsFor(word.length);
+  if(maxEdits===0) return false;
+  for(var i=0;i<hayTokens.length;i++){
+    if(Math.abs(hayTokens[i].length-word.length) > maxEdits) continue;
+    if(levenshtein(word, hayTokens[i]) <= maxEdits) return true;
+  }
+  return false;
 }
 function matchesFreeSearch(habit, search){
   if(!search) return true;
   var words = normSearchText(search).trim().split(/\s+/).filter(Boolean);
   if(!words.length) return true;
-  var hay = normSearchText(habit.name) + " " + habit.tags.map(normSearchText).join(" ");
-  return words.every(function(w){ return fuzzyWordMatch(w, hay); });
+  var hayFull = normSearchText(habit.name) + " " + habit.tags.map(normSearchText).join(" ");
+  var hayTokens = tokenizeSearch(hayFull);
+  return words.every(function(w){ return fuzzyWordMatch(w, hayFull, hayTokens); });
 }
 function matchesFreeFilter(habit, filter){
   for(var gi=0; gi<TAG_GROUPS.length; gi++){
