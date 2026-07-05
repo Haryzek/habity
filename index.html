@@ -1456,8 +1456,18 @@ prioInput.oninput = function(){ prioVal.textContent = prioInput.value; };
 var habitDurMin = document.getElementById("habitDurMin"), habitDurMax = document.getElementById("habitDurMax");
 var habitDurLabels = document.getElementById("habitDurLabels");
 function refreshHabitDurLabels(){ habitDurLabels.textContent = durationLabel(+habitDurMin.value, +habitDurMax.value); }
-habitDurMin.oninput = function(){ if(+habitDurMin.value > +habitDurMax.value) habitDurMax.value = habitDurMin.value; refreshHabitDurLabels(); };
-habitDurMax.oninput = function(){ if(+habitDurMax.value < +habitDurMin.value) habitDurMin.value = habitDurMax.value; refreshHabitDurLabels(); };
+// U existující aktivity ukládáme tagy/trvání do stavu okamžitě při každé změně
+// (ne až na tlačítko Uložit), ať se nic neztratí při odchodu ze sheetu bez uložení.
+function persistHabitEditIfExisting(){
+  if(!editingId || editingSection!==1) return;
+  var h = habitById(editingSection, editingId);
+  if(!h) return;
+  h.tags = habitEditTags.slice();
+  h.durationMin = +habitDurMin.value; h.durationMax = +habitDurMax.value;
+  save();
+}
+habitDurMin.oninput = function(){ if(+habitDurMin.value > +habitDurMax.value) habitDurMax.value = habitDurMin.value; refreshHabitDurLabels(); persistHabitEditIfExisting(); };
+habitDurMax.oninput = function(){ if(+habitDurMax.value < +habitDurMin.value) habitDurMin.value = habitDurMax.value; refreshHabitDurLabels(); persistHabitEditIfExisting(); };
 var habitEditTags = [];
 function renderHabitTagChips(){
   var wrap = document.getElementById("habitTagChips");
@@ -1473,6 +1483,7 @@ function renderHabitTagChips(){
         var idx = habitEditTags.indexOf(tg);
         if(idx>=0) habitEditTags.splice(idx,1); else habitEditTags.push(tg);
         renderHabitTagChips();
+        persistHabitEditIfExisting();
       };
       wrap.appendChild(chip);
     });
