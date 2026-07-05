@@ -1481,7 +1481,13 @@ function renderHabitTagChips(){
       chip.textContent = tg;
       chip.onclick = function(){
         var idx = habitEditTags.indexOf(tg);
-        if(idx>=0) habitEditTags.splice(idx,1); else habitEditTags.push(tg);
+        if(idx>=0){
+          habitEditTags.splice(idx,1);
+        } else {
+          // max 1 tag ze skupiny na aktivitu – nový výběr nahradí případný starý ze stejné skupiny
+          habitEditTags = habitEditTags.filter(function(t){ return g.tags.indexOf(t)<0; });
+          habitEditTags.push(tg);
+        }
         renderHabitTagChips();
         persistHabitEditIfExisting();
       };
