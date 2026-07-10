@@ -760,10 +760,9 @@
         <div class="seg" data-dl="none">Backlog</div>
         <div class="seg" data-dl="today">Dnes</div>
         <div class="seg" data-dl="tomorrow">Zítra</div>
-        <div class="seg" data-dl="date">DD</div>
       </div>
     </div>
-    <input type="date" id="utDate" class="date-in" style="display:none">
+    <input type="date" id="utDate" class="date-in">
 
     <div class="field-inline">
       <label>Opakování</label>
@@ -2309,14 +2308,13 @@ document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(seg){
   seg.onclick = function(){
     utDL = seg.dataset.dl;
     document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(s){ s.classList.toggle("on", s===seg); });
-    document.getElementById("utDate").style.display = (utDL==="date") ? "block" : "none";
+    document.getElementById("utDate").value = "";
   };
 });
-/* vyplněné datum si samo řekne o segment DD */
+/* vyplněný picker je sám o sobě volbou termínu, segmenty ustoupí */
 document.getElementById("utDate").onchange = function(){
-  if(!this.value) return;
-  utDL = "date";
-  document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(s){ s.classList.toggle("on", s.dataset.dl==="date"); });
+  utDL = this.value ? "date" : "none";
+  document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(s){ s.classList.remove("on"); });
 };
 /* repeat segmenty */
 document.querySelectorAll("#utRepeatSeg .seg").forEach(function(seg){
@@ -2376,7 +2374,6 @@ function openUtSheet(id){
   document.querySelectorAll("#utRepeatSeg .seg").forEach(function(s){ s.classList.remove("on"); });
   document.querySelectorAll("#utBouncerDow .seg").forEach(function(s){ s.classList.remove("on"); });
   document.getElementById("utDate").value = "";
-  document.getElementById("utDate").style.display = "none";
   document.getElementById("utBouncerDate").value = "";
 
   if(editingUtId){
@@ -2392,7 +2389,6 @@ function openUtSheet(id){
       else { utDL="date"; document.getElementById("utDate").value = t.date; }
     }
     document.querySelectorAll("#utDeadlineSeg .seg").forEach(function(s){ s.classList.toggle("on", s.dataset.dl===utDL); });
-    document.getElementById("utDate").style.display = (utDL==="date")?"block":"none";
     // repeat
     utRep = t.repeat;
     document.querySelectorAll("#utRepeatSeg .seg").forEach(function(s){ s.classList.toggle("on", s.dataset.rep===utRep); });
