@@ -70,16 +70,16 @@ obráceně:**
 
 | pos (`curSection`) | tab dole | Check rovina | Přehled rovina | Co to je |
 |-----|-----|-------------|----------------|----------|
-| 0 | **Progress** | seznam projektů + subtasky | mřížka náročnosti 3×30 | **Projektový** tracker — úkol = projekt se subtasky, proporční proužky. SOLO. |
-| 1 | **Tasks** | WiP náhled + kalendář | Dny/Měsíce | Kalendářní task manager s backlogy, repeaty, rollupem. |
-| 2 | **Habits** | dnešní odškrtávání | mřížka 3×30 | Habit tracker. **DEFAULT landing při refreshi** (`curSection=2`). |
+| 0 | **Progress** | seznam projektů + kroky | mřížka náročnosti 3×30 | **Projektový** tracker — projekt (např. „Stěhování bytu") se odškrtávacími kroky, proporční proužky. SOLO. |
+| 1 | **Tasks** | WiP náhled + kalendář | Dny/Měsíce | Kalendářní task manager s backlogy, repeaty, rollupem. **DEFAULT landing při refreshi** (`curSection=1`). |
+| 2 | **Habits** | dnešní odškrtávání | mřížka 3×30 | Habit tracker. |
 | 3 | **Free** | dnešní odškrtávání **+ backlogy** | mřížka 3×30 (agreguje vše) | Druhý habit tracker (volnočas). **Nově má backlogy** — viz 3b. |
 
 Pozn.: názvy v UI jsou anglicky (Progress/Tasks/Habits/Free), zbytek appky česky.
 `hTitle` nahoře ukazuje jen název sekce (ne rozlišuje Check/Přehled).
 
-**Struktura DOMu:** 4 `<section class="page">` (`secTasky`/`secUkoly`/`secNavyky`/
-`secVolno` — interní id zůstala česká), každá obsahuje jeden `.track` se **dvěma**
+**Struktura DOMu:** 4 `<section class="page">` (`secProgress`/`secTasks`/`secNavyky`/
+`secVolno`), každá obsahuje jeden `.track` se **dvěma**
 panely (Check + Přehled). Track šířka 200 %, panel 50 %. Aktivní je vždy jen
 sekce odpovídající `curSection` (`.page.active`), swipe v ní posouvá track mezi
 oběma panely podle `curView`.
@@ -97,8 +97,14 @@ Proto habit toggly volají `renderTodayPanel`+`renderOverviewPanel`, subtask tog
 `renderTasksPanel`+`renderProgresPanel`, a `utComplete`/`utMiss` volají
 `renderCheck`+`renderUtOverview`.
 
-**Vše mezi sekcemi je oddělené, nic se nepřelévá** — projektové tasky, kalendářní
-úkoly, návyky a volnočas jsou čtyři nezávislé světy.
+**Data se mezi sekcemi nepřelévají, ale nejsou to čtyři nezávislé světy — jsou
+tři.** Progress (`state.tasks`) a Tasks (`state.utasks`) jsou vzájemně i vůči
+zbytku úplně oddělené; `state.daily` i `state.backlogs` patří výhradně sekci
+Tasks. Habits a Free jsou ale **dvě instance jedné sekce**: obě žijí ve
+`state.sections[0]` / `[1]`, mají tentýž tvar `{habits, log}`, renderuje je tentýž
+kód přes index a edituje **tentýž sheet** (`openSheet(curSection-2, …)`). Free jen
+navíc ukládá tagy/délku/fun (větve `editingSection===1`) a sdílí s editorem návyku
+globální slovník `TAG_GROUPS`.
 
 *(Pozn. k historii: tohle README dřív popisovalo bug, kde `detailBack` volal
 neexistující `renderOverview()` — opraveno na `renderOverviewPanel(detailSection)`
@@ -107,6 +113,16 @@ při navigačním překopání.)*
 ---
 
 ## 3. Datový model (localStorage klíč `habity.v2`)
+
+> **PAST: klíče ve `state` nesedí na názvy sekcí v UI.**
+> `state.tasks` = sekce **Progress** (projekty s kroky).
+> `state.utasks` = sekce **Tasks** (úkoly s termínem).
+> `state.sections[0]` = **Habits**, `state.sections[1]` = **Free**.
+> Slovo „task" tak v kódu znamená tři různé věci podle místa — i `data-scope="tasks"`
+> u backlog dropdownů míří na `utasks`. Je to historický relikt a **záměrně se
+> nepřejmenovává**: klíče se serializují do localStorage, takže rename bez migrace
+> `v2 → v3` smaže uživateli data. Až se migrace bude dělat z jiného důvodu,
+> přibalit i tohle.
 
 Pozn.: klíč zůstal `habity.v2` i po přidání úkolové sekce — **nepřidával se v3**,
 jen se rozšířila struktura a `normalize()` doplní chybějící pole. Žádná
