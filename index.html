@@ -576,13 +576,13 @@
 </div>
 
 <div class="wrap">
-  <!-- SEKCE: TASKY (Check / Progres) -->
-  <section class="page" id="secTasky">
-    <div class="track" id="trackTasky">
+  <!-- SEKCE: PROGRESS – projekty s kroky (data: state.tasks) -->
+  <section class="page" id="secProgress">
+    <div class="track" id="trackProgress">
       <div class="panel">
         <div id="tasksList"></div>
         <div class="empty-state" id="tasksEmpty" style="display:none">
-          Zatím žádný úkol.<br>Ťukni na <b style="color:var(--accent)">+</b> a přidej první.
+          Zatím žádný projekt.<br>Ťukni na <b style="color:var(--accent)">+</b> a přidej první.
         </div>
       </div>
       <div class="panel">
@@ -591,14 +591,14 @@
           <span><i style="background:var(--empty)"></i>zbývá</span>
         </div>
         <div id="progresList"></div>
-        <div class="empty-state" id="progresEmpty" style="display:none">Žádné úkoly k zobrazení.</div>
+        <div class="empty-state" id="progresEmpty" style="display:none">Žádné projekty k zobrazení.</div>
       </div>
     </div>
   </section>
 
-  <!-- SEKCE: ÚKOLY (Check / Přehled úkolů) -->
-  <section class="page active" id="secUkoly">
-    <div class="track" id="trackUkoly">
+  <!-- SEKCE: TASKS – úkoly s termínem (data: state.utasks) -->
+  <section class="page active" id="secTasks">
+    <div class="track" id="trackTasks">
       <div class="panel">
         <div class="checkDefault" id="checkDefault">
           <div class="wipbar" id="wipBar">
@@ -727,7 +727,7 @@
 <!-- ADD / EDIT TASK SHEET -->
 <div class="scrim" id="taskScrim">
   <div class="sheet tall" id="taskSheet">
-    <input type="text" id="taskName" placeholder="Název úkolu" autocomplete="off">
+    <input type="text" id="taskName" placeholder="Název projektu" autocomplete="off">
     <div class="prio-row">
       <span class="prio-lab">Priorita</span>
       <input type="range" id="taskPrio" min="1" max="10" value="5">
@@ -739,7 +739,7 @@
       <button class="btn btn-primary" id="saveTask">Uložit</button>
       <button class="btn btn-ghost" id="cancelTask">Zrušit</button>
     </div>
-    <button class="btn btn-danger btn-slim" id="deleteTask" style="display:none">Smazat úkol</button>
+    <button class="btn btn-danger btn-slim" id="deleteTask" style="display:none">Smazat projekt</button>
   </div>
 </div>
 
@@ -853,11 +853,16 @@
 "use strict";
 
 /* ---------- state ----------
+   POZOR na názvy: klíče ve state nesedí na názvy sekcí v UI (historický relikt,
+   přejmenování by rozbilo uložená data v localStorage):
+     state.tasks   -> sekce PROGRESS (projekty s kroky)
+     state.utasks  -> sekce TASKS (úkoly s termínem)
+     state.sections[0] -> sekce HABITS, state.sections[1] -> sekce FREE
+
    v2 struktura:
    {
      sections: [ {habits,log}, {habits,log} ],   // 0=povinnosti(01), 1=volnočas(02)
      tasks: [ {id,name,priority,createdAt, subtasks:[{id,name,weight,done}]} ],
-     // NOVÁ úkolová sekce (Check):
      backlogs: ["Wip","Done"],            // názvy; Wip+Done vždy první dva, pořadí = řazení
      utasks: [ {id,name,priority,createdAt,
                 date:"YYYY-MM-DD"|null,    // null = nedatovaný (bydlí v backlogu)
@@ -867,11 +872,11 @@
                 done:false} ],
      daily: { "YYYY-MM-DD": {done:n, missed:n} }  // agregát pro Přehled
    }
-   Swipe pozice: 0=Tasky/Progres, 1=Úkoly(Check), 2=Návyky, 3=Volno            */
+   Sekce (taby): 0=Progress, 1=Tasks, 2=Habits, 3=Free                        */
 var KEY = "habity.v2";
 var OLDKEY = "habity.v1";
-var GRID = 90;       // čtverečků na úkol (3 řádky × 30)
-var curSection = 1;  // 0..3 – aktivní sekce (Tasky/Úkoly/Návyky/Volno), volí se tabama dole
+var GRID = 90;       // čtverečků na projekt (3 řádky × 30)
+var curSection = 1;  // 0..3 – aktivní sekce (Progress/Tasks/Habits/Free), volí se tabama dole
 var curView = 0;     // 0=Check, 1=Přehled – swipe pozice, GLOBÁLNÍ (sdílená napříč sekcemi)
 var WIP_PREVIEW_MIN = 5;
 
@@ -1701,7 +1706,7 @@ function renderTasksPanel(){
     if(task.subtasks.length===0){
       var none = document.createElement("div");
       none.style.cssText = "color:var(--dim);font-family:var(--serif);font-size:14px;padding:10px 2px;";
-      none.textContent = "Žádné kroky. Uprav úkol a přidej je.";
+      none.textContent = "Žádné kroky. Uprav projekt a přidej je.";
       body.appendChild(none);
     } else {
       task.subtasks.forEach(function(s){
@@ -1719,7 +1724,7 @@ function renderTasksPanel(){
     }
     var edit = document.createElement("div");
     edit.className = "task-edit";
-    edit.textContent = "Upravit úkol";
+    edit.textContent = "Upravit projekt";
     edit.onclick = function(){ openTaskSheet(task.id); };
     body.appendChild(edit);
 
@@ -1869,7 +1874,7 @@ document.getElementById("saveTask").onclick = function(){
 document.getElementById("deleteTask").onclick = function(){
   if(!editingTaskId) return;
   var t = taskById(editingTaskId); if(!t) return;
-  askConfirm('Smazat úkol „'+t.name+'" i všechny jeho kroky?', "Smazat", function(){
+  askConfirm('Smazat projekt „'+t.name+'" i všechny jeho kroky?', "Smazat", function(){
     state.tasks = state.tasks.filter(function(x){ return x.id!==editingTaskId; });
     delete expanded[editingTaskId];
     save(); closeTaskSheet(); renderTasksPanel(); renderProgresPanel();
@@ -2714,8 +2719,8 @@ document.getElementById("btnClearOv").onclick = function(){
 };
 
 /* ---------- navigace: taby = sekce (0..3), swipe/pager = Check<->Přehled (globální) ---------- */
-var SEC_PAGES  = ["secTasky","secUkoly","secNavyky","secVolno"];
-var SEC_TRACKS = ["trackTasky","trackUkoly","trackNavyky","trackVolno"];
+var SEC_PAGES  = ["secProgress","secTasks","secNavyky","secVolno"];
+var SEC_TRACKS = ["trackProgress","trackTasks","trackNavyky","trackVolno"];
 var SEC_TITLES = ["Progress","Tasks","Habits","Free"];
 
 function applyViewToTrack(trackEl, animate){
