@@ -2820,6 +2820,9 @@ document.getElementById("btnSettings").onclick = openSettings;
   var root = document.documentElement;
   function apply(){
     var kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    // subpixelová rezerva: fixed pozicování nad klávesnicí o pár px nesedí
+    // a ukusuje spodní tlačítka; polštář jen když je klávesnice fakt venku
+    if(kb > 0) kb += 8;
     root.style.setProperty("--kb", kb+"px");
     root.style.setProperty("--vvh", vv.height+"px");
   }
