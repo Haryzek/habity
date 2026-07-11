@@ -283,9 +283,10 @@
 
   /* compact backlog picker (náhrada nativního <select> dropdownu na mobilu) */
   .fsel-trigger{text-align:left;font:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .picker-sheet{padding-top:14px;z-index:75;}
-  .picker-sheet h2{font-size:15px;margin:0 0 8px;}
-  .picker-list{max-height:min(56vh,420px);overflow-y:auto;border-top:1px solid var(--border);margin-bottom:10px;}
+  .picker-sheet{padding-top:14px;z-index:75;height:calc(var(--vvh,100vh) - 12px);display:flex;flex-direction:column;}
+  .picker-sheet h2{font-size:15px;margin:0 0 8px;flex-shrink:0;}
+  .picker-list{flex:1;min-height:0;overflow-y:auto;border-top:1px solid var(--border);margin-bottom:10px;}
+  .picker-sheet .btn-row,.picker-sheet #pickerCancel{flex-shrink:0;}
   .picker-item{
     display:flex;align-items:center;gap:8px;padding:6px 4px;
     font-family:var(--serif);font-size:13px;line-height:1.2;
