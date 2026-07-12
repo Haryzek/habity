@@ -2978,8 +2978,8 @@ function recalcMoveCaps(){
   if(di) state.move.caps.dist = Math.round(di);
 }
 
-function importMoveData(arr){
-  if(!Array.isArray(arr)){ toast("Čekal jsem pole dní (JSON array)."); return; }
+function importMoveData(arr, silent){
+  if(!Array.isArray(arr)){ if(!silent) toast("Čekal jsem pole dní (JSON array)."); return; }
   var n=0;
   arr.forEach(function(d){
     if(!d || typeof d!=="object") return;
@@ -2995,7 +2995,17 @@ function importMoveData(arr){
   recalcMoveCaps();
   save();
   renderMove();
-  toast("Naimportováno "+n+" dní. 🥥");
+  if(!silent) toast("Naimportováno "+n+" dní. 🥥");
+}
+
+// Auto-sync: appka si při startu tiše stáhne move_data.json z Pages (píše ho
+// PC skript 3× denně). Selhání (offline / soubor chybí) se ignoruje — appka
+// jede s tím, co má v localStorage. Ruční import v ⚙ zůstává jako fallback.
+function fetchMoveData(){
+  fetch("move_data.json", {cache:"no-store"})
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(arr){ if(Array.isArray(arr) && arr.length) importMoveData(arr, true); })
+    .catch(function(){});
 }
 
 (function(){
@@ -3031,6 +3041,7 @@ freeSearchEl.oninput = function(){
 document.getElementById("hDate").textContent = fmtLong(today());
 renderAll();
 updateUI();
+fetchMoveData();
 </script>
 
 </body>
