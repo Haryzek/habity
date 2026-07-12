@@ -1,6 +1,6 @@
 Ahoj osle!
 
-# HABITY — README pro pokračování (stav po překopání navigace + Free backlogy)
+# HABITY — README pro pokračování (stav po přidání sekce Move + Garmin sync)
 
 Tohle čte Claude, který přebírá práci na appce **Habity** v nové konverzaci.
 Cílem je zahučet do věci bez ztráty kontextu. Čti to celé, ať chápeš nejen
@@ -27,28 +27,29 @@ Cílem je zahučet do věci bez ztráty kontextu. Čti to celé, ať chápeš ne
 
 ## 1. Co je Habity
 
-Osobní tracker návyků a úkolů. **Jednosouborová PWA** (`habity.html`),
-hostovaná na **GitHub Pages**. Roste organicky, „intuitivně, po malých kouscích
-mezi jinou prací" — features se přidávají podle reálné potřeby, ne dopředu
-přeengineerované.
+Osobní tracker návyků, úkolů a pohybu. **Jednosouborová PWA** (`index.html`),
+hostovaná na **GitHub Pages** (`haryzek.github.io/habity/`). Roste organicky,
+„intuitivně, po malých kouscích mezi jinou prací" — features se přidávají podle
+reálné potřeby, ne dopředu přeengineerované.
 
 **Sdílená dohoda Bob ↔ Claude:** stavět dál do jednoho souboru, dokud to drží
 pohromadě. Claude má **proaktivně křiknout**, až bude refactoring nebo rozdělení
-souboru na místě. *(Aktuální stav: soubor má ~2200 řádků / ~90 KB. Pořád
-udržitelné. Navigační překopání (viz níž) strukturu spíš zjednodušilo —
-swipe engine je teď poloviční. Až přibude další velká sekce nebo se začne
-logovat per-task historie, je čas zvážit řez — ale Bob to nemá rád dělat
-předčasně, takže ne dřív, než to bude fakt potřeba.)*
+souboru na místě. *(Aktuální stav: soubor má ~3030 řádků / ~136 KB. Pořád
+udržitelné, ale roste — přibyla sekce Move (viz sekce 5). Až přibude další velká
+sekce nebo se začne logovat per-task historie, je čas zvážit řez — ale Bob to
+nemá rád dělat předčasně, takže ne dřív, než to bude fakt potřeba.)*
 
-**Dodávka:** vždy celý aktualizovaný `habity.html` jako soubor ke stažení
-(ne útržky do chatu — je toho moc na copy-paste). Bob ho nahradí na GitHubu
-a refreshne. localStorage přežívá update (je domain-bound).
+**Prostředí a dodávka:** Projekt je **lokální git repo** na `E:\_dev\habity`
+(Claude Code, Windows/PowerShell). Edituje se přímo `index.html`, po zásahu
+`git commit` + `git push` do `main`, GitHub Pages sám nasadí (pár desítek sekund;
+ověř `curl` na Pages URL, `gh` CLI tu není). localStorage přežívá update
+(domain-bound). **Osobní bordel/tokeny patří do `local/`** — je globálně
+gitignorovaná (`core.excludesFile`), viz Bobova paměť.
 
-**Důležité workflow pro Claude:** Soubor je v projektu na
-`/mnt/project/habity.html`. **Vždy si ho načti z disku znovu před zásahem**
-(zkopíruj do `/home/claude/` a dělej tam), nespoléhej na paměť z chatu —
-konverzace bývají dlouhé a paměť klame. Po každém zásahu ověř JS syntax přes
-Node (`new Function(code)`) a párování tagů.
+**Důležité workflow pro Claude:** **Vždy si `index.html` načti z disku znovu
+před zásahem**, nespoléhej na paměť z chatu — konverzace bývají dlouhé a paměť
+klame. Po každém zásahu ověř JS syntax přes Node (`new Function(code)` nad
+obsahem `<script>`) a párování tagů.
 
 ---
 
@@ -58,13 +59,15 @@ Node (`new Function(code)`) a párování tagů.
 spodní taby (Check / Přehled) a swipe přepínal mezi 4 sekcemi. **Teď je to
 obráceně:**
 
-- **Spodní taby = 4 sekce.** Čtyři tlačítka dole: **Progress · Tasks · Habits ·
-  Free** (pořadí zleva odpovídá pozici 0–3). Klik na tab vždycky vede na **Check**
-  rovinu té sekce.
+- **Spodní taby = 5 sekcí.** Pět tlačítek dole: **Progress · Tasks · Habits ·
+  Free · Move** (pořadí zleva odpovídá pozici 0–4). Klik na tab vždycky vede na
+  **Check** rovinu té sekce (Move Check/Přehled nemá — viz níž).
 - **Swipe doleva/doprava = Check ↔ Přehled.** Horizontální swipe (nebo dvě tečky
   pageru nahoře) přepíná mezi Check a Přehled rovinou. Tahle pozice je
-  **GLOBÁLNÍ a sdílená** napříč všema 4 sekcema (`curView`: 0=Check, 1=Přehled) —
+  **GLOBÁLNÍ a sdílená** napříč sekcemi 0–3 (`curView`: 0=Check, 1=Přehled) —
   přepnu na Přehled v Tasks, kliknu na Free tab, jsem pořád na Přehledu.
+  **Move (pozice 4) je výjimka** — má jen jednu plochu, swipe/pager/FAB se na ni
+  nevztahují.
 - **Data/Nastavení** (export/import JSON, vymazat historii) = **ozubené kolečko ⚙
   v headeru** nahoře vedle data. Už NENÍ spodní tab.
 
@@ -74,22 +77,31 @@ obráceně:**
 | 1 | **Tasks** | WiP náhled + kalendář | Dny/Měsíce | Kalendářní task manager s backlogy, repeaty, rollupem. **DEFAULT landing při refreshi** (`curSection=1`). |
 | 2 | **Habits** | dnešní odškrtávání | mřížka 3×30 | Habit tracker. |
 | 3 | **Free** | dnešní odškrtávání **+ backlogy** | mřížka 3×30 (agreguje vše) | Druhý habit tracker (volnočas). **Nově má backlogy** — viz 3b. |
+| 4 | **Move** | — (jedna plocha) | — | Garmin aktivita jako kolečka po týdnech. Data z Garmin Connectu, plní se samy. **Viz sekce 5.** |
 
-Pozn.: názvy v UI jsou anglicky (Progress/Tasks/Habits/Free), zbytek appky česky.
-`hTitle` nahoře ukazuje jen název sekce (ne rozlišuje Check/Přehled).
+Pozn.: názvy v UI jsou anglicky (Progress/Tasks/Habits/Free/Move), zbytek appky
+česky. `hTitle` nahoře ukazuje jen název sekce (ne rozlišuje Check/Přehled).
 
-**Struktura DOMu:** 4 `<section class="page">` (`secProgress`/`secTasks`/`secNavyky`/
-`secVolno`), každá obsahuje jeden `.track` se **dvěma**
-panely (Check + Přehled). Track šířka 200 %, panel 50 %. Aktivní je vždy jen
-sekce odpovídající `curSection` (`.page.active`), swipe v ní posouvá track mezi
-oběma panely podle `curView`.
+**Struktura DOMu:** 5 `<section class="page">` (`secProgress`/`secTasks`/`secNavyky`/
+`secVolno`/`secMove`). Sekce 0–3 mají jeden `.track` se **dvěma** panely
+(Check + Přehled), track šířka 200 %, panel 50 %. **`secMove` má jen jeden panel**
+(override `#trackMove{width:100%}`, translateX vždy 0). Aktivní je vždy jen sekce
+odpovídající `curSection` (`.page.active`).
 
 Swipe engine: **Pointer Events API** (ne touch events — kvůli testování myší na
 desktopu). `touch-action: pan-y` nechává vertikální scroll prohlížeči,
-horizontální gesta chytá appka sama. `attachSwipe` se napojí na všechny 4 sekce;
-hranice swipe jsou 0..1 (jen Check/Přehled). Klíčové funkce: `updateUI()`
-(přepíná `.active`, transformuje tracky, syncuje taby/pager/title),
-`SEC_PAGES`/`SEC_TRACKS`/`SEC_TITLES` (mapy id a názvů).
+horizontální gesta chytá appka sama. `attachSwipe` se napojí na sekce 0–3
+(**`secMove` přeskočena** — nemá co swipovat); hranice swipe jsou 0..1. Klíčové
+funkce: `updateUI()` (přepíná `.active`, transformuje tracky, syncuje
+taby/pager/title, **skrývá pager a FAB na Move**), `applyViewToTrack` (u
+`trackMove` translateX 0, jinak podle `curView`), `SEC_PAGES`/`SEC_TRACKS`/
+`SEC_TITLES` (mapy id a názvů, teď 5 položek).
+
+⚠️ **Layout past (vyřešená):** `.wrap` (kontejner sekcí) je `display:flex`
+column bez stretch, takže se smrskává na šířku obsahu. Široké sekce (karty) ho
+roztáhnou, úzká Move ne → kolečka se lepila vlevo. Fix = `.wrap{width:100%}`
+(do `max-width:560px`). Kdyby někdy nová sekce zase kolabovala na šířku, tady
+je příčina.
 
 **Sourozenecký sync:** Check a Přehled jsou teď v jednom tracku vedle sebe a oba
 viditelné během swipe, takže akce na jedné straně **musí refreshnout i druhou**.
@@ -147,9 +159,20 @@ destruktivní migrace. v1 → v2 migrace pro stará data existuje taky.
     done: false
   } ],
   daily: { "YYYY-MM-DD": {done:n, missed:n} },  // DENNÍ AGREGÁT pro Přehled (ne per-task log!)
-  lastRollup: "YYYY-MM-DD" | null
+  lastRollup: "YYYY-MM-DD" | null,
+
+  // ----- MOVE (Garmin aktivita, viz sekce 5) -----
+  move: {
+    days: { "YYYY-MM-DD": {kcal, durMin, distM, hr} },  // agregát dne (píše skript/import)
+    caps: { kcal:679, dist:3729, hrBase:55, hrCap:130 }  // stropy prstenců; kcal/dist p90 z dat, hr napevno
+  }
 }
 ```
+
+**Pozn.:** `move.days` se **kumuluje** (import merguje, nemaže staré) — historie
+přežívá, i když feed nese jen posledních 90 dní. `move` je celé **obnovitelné**
+(z GitHubu / Garminu), ale i tak je součást exportu (celý `state`). `normalize()`
+ho defenzivně doplní; klíč `habity.v2` beze změny.
 
 **Proč denní agregát a ne per-task event log:** Přehled potřebuje jen *počty*
 zelených/červených čtverečků, ne identitu úkolů v historii. Agregát = ~15 KB/rok,
@@ -292,7 +315,99 @@ Přepínač **Dny / Měsíce** (`utOvMode`). Data z `state.daily`. Mřížka 30 
 
 ---
 
-## 5. Vizuál / styl
+## 5. MOVE — Garmin aktivita a sync pipeline
+
+Sekce **Move** (pozice 4, tab úplně vpravo) ukazuje denní pohybovou aktivitu
+z Garminu jako **kolečka po týdnech**. Cíl: „donutit se hýbat" přes rychlou
+vizuální gestalt — jedno mrknutí a víš, jak plnej byl den, aniž bys četl čísla.
+
+### 5a. Vizuál kolečka (jeden den = jedno kolečko)
+
+- **Velikost kruhu = kcal** (souhrnná náročnost dne). Řídí gestalt „jak plnej den".
+- **Číslo uvnitř (bold, černé) = doba trvání v minutách.**
+- **Levá půlka prstence (zelená `--done`) = vzdálenost**, plní se zdola.
+- **Pravá půlka prstence (červená `--missed`) = tep**, plní se zdola.
+- **Prázdný den = jen tečka.**
+
+**Stropy** (`state.move.caps`): plná půlka/plný kruh = strop.
+- `kcal` a `dist` = **90. percentil z vlastní historie**, přepočítá se při každém
+  importu (`recalcMoveCaps`) — vizualizace „roste s tebou".
+- `hr` = **napevno baseline→cap `55→130`** (klidový tep → zátěž). Baseline proto,
+  aby prázdná půlka znamenala klid, ne „jen málo". Přepočítávat z dat by u řídkého
+  nošení hodinek dalo nesmyslný strop.
+
+**Render (`renderMove`/`moveCell`):** řádek = týden (**Po vlevo, Ne vpravo**),
+**nejnovější týden nahoře**, nekonečný scroll od prvního záznamu po dnešek.
+Kolečka jsou **plně responsivní**: SVG má fixní `viewBox 0 0 100 100` a
+`width:100%` buňky, takže se škálují šířkou obrazovky, tloušťka prstence zůstává
+konstantní (fix stroke), průměr roste s kcal. `.move-week` je flex se 7 buňkami.
+
+Historická poznámka: kJ jsme zavrhli (silně koreluje s tepem×časem), jedeme kcal.
+Data se **kumulují** v localStorage (viz sekce 3), takže scroll roste s historií
+(~1 řádek / týden, po 2 letech ~104 řádků — kapacita žádný problém).
+
+### 5b. Datový most: appka ↔ Garmin
+
+Appka je statická PWA — **s Garminem nikdy nemluví přímo** (CORS/OAuth to z
+prohlížeče nedovolí). Mezi nima stojí **PC skript**. Tok je **jednosměrný**:
+
+```
+Garmin Connect
+   │  build_data.py (Python) — token login, stáhne 90 dní, agreguje po dnech
+   ▼
+move_data.json (KOŘEN repa)  → git commit + push (jen když se změní)
+   ▼
+GitHub Pages  → appka si ho při startu tiše fetchne (fetchMoveData, cache:no-store)
+   ▼
+sekce Move   — plná automatika, nulová ruční práce
+```
+
+- **Appka strana:** `fetchMoveData()` (volaná v initu) stáhne `move_data.json`
+  z Pages a naimportuje `importMoveData(arr, silent=true)` — bez toastu, tiše.
+  Offline/chybějící soubor = ignoruje se, jede z localStorage. **Ruční import už
+  v UI není** (byl v ⚙, odstraněn — auto-fetch ho nahradil). `importMoveData`
+  zůstává jako funkce, jen ho volá auto-fetch.
+- **Agregace dne** (ve skriptu): kcal/trvání/vzdálenost = součet aktivit dne, tep
+  = průměr vážený délkou. Bereme **všechny aktivity** (chůze, tenis, plavání…),
+  jen ručně **zaznamenané** (Garmin `get_activities`; celodenní kroky bez
+  spuštěného záznamu se do feedu nedostanou — Bobovo vědomé rozhodnutí, varianta A).
+
+### 5c. Motor syncu — `local/garmin/` (git-ignorováno)
+
+Celý motor žije v `local/garmin/` (mimo git, osobní/citlivé):
+- **`build_data.py`** — skript. Píše `move_data.json` do **kořene repa**
+  (`REPO_ROOT`), pak commit+push. Mění jen datový soubor, takže s lidským vývojem
+  (jiné soubory) **nikdy nekonfliktuje**; před push dělá `pull --rebase --autostash`.
+- **`.garmintoken/`** — přihlašovací token (garth). **Login heslem jen poprvé**,
+  pak token (bez hesla, bez `429` rate limitu). Token vyprší ~po roce → skript si
+  při ručním běhu řekne o heslo; při automatickém běhu bez konzole to jen
+  zaloguje a skončí (nezasekne se na `input()`).
+- **`sync.log`** — log běhů.
+
+**Automatika:** Windows **Task Scheduler**, úloha `Habity\GarminSync`, spouští
+`pythonw.exe build_data.py` (bez okna) **3× denně v 10:00 / 18:00 / 22:00**,
+`StartWhenAvailable` (dožene zmeškané). Git i pythonw čtou systémový PATH.
+
+**Soukromí:** `move_data.json` je v kořeni → **veřejně čitelný na Pages URL**.
+Bob to vědomě schválil (Garmin aktivita není citlivá jako osobní texty). **Osobní
+sekce (návyky/tasky) se takhle NIKDY veřejně vystavovat nesmí** — GitHub Pages
+nemá autentizaci.
+
+### 5d. Zálohování (klasický export)
+
+⚙ → „Exportovat zálohu" stáhne **`habity-zaloha.json`** — **pevný název**
+(přepisuje se, nehromadí se v Downloads). Obsahuje **celý `state` včetně Move**.
+Bobův režim: přepisovaný soubor houpne občas do Dropboxu, občas přejmenuje s
+datem = rolling backup + milníky. localStorage je jediná ostrá kopie, dokud se
+nevyexportuje → **zálohovat pravidelně**.
+
+**Budoucnost (fáze 3, neřešeno):** desktop↔mobil **sync osobních sekcí** přes
+**privátní autentizovanou vrstvu** (ne veřejné Pages). Obousměrný živý stav =
+riziko konfliktů + nutná auth. Velký samostatný projekt, až bude potřeba.
+
+---
+
+## 6. Vizuál / styl
 
 Tmavé „kokosové" téma. CSS proměnné v `:root`:
 `--bg:#15120E --surface:#201B15 --surface2:#2A241C --border:#3A332A
@@ -306,7 +421,7 @@ ošetřen pro rychlé klikání. Jen na ✓ (ne ✕ ani přesun). Dopaminová od
 
 ---
 
-## 6. Co je hotové a co Boba čeká
+## 7. Co je hotové a co Boba čeká
 
 **HOTOVÉ a matematicky otestované** (přes Node simulace): repeat respawn (7
 scénářů včetně blogu/finančáku/přetečení 31.→28.), rollup (mix repeat/ne-repeat/
@@ -316,9 +431,18 @@ migrace (stará data → „Free", validace neplatných backlogů → fallback).
 **Navigace překopaná naruby** (taby=sekce, swipe=Check/Přehled, ⚙ v headeru) —
 viz sekce 2. Sourozenecký sync renderů ověřen ručně.
 
+**Move + Garmin pipeline HOTOVÁ a ověřená v provozu** (viz sekce 5): token
+cache, automatika 3× denně (Task Scheduler), auto-push `move_data.json` do repa,
+auto-fetch v appce, responsivní kolečka. Ověřeno reálnými daty z Bobova Garminu.
+Zbývá jen doladit vizuál Move „na závěr všeho" (velikosti/mezery detaily) a
+případně „ukázat posledních X týdnů" místo nekonečného scrollu.
+
 **Reálně neověřené (čeká na běh času):** rollup se na ostro projeví až den po
 naplánování úkolu (musí propadnout přes půlnoc). Logika je testovaná na
 simulovaných datech, ale reálný průchod časem Bob uvidí až s reálným časem.
+U Move: **reálný auto-commit+push** se spustí až přijdou nová data (zatím
+ověřeno jen „beze změny nic k pushnuti"); dlouhý výpadek syncu >90 dní udělá
+nedoplnitelnou díru (skript se tak hluboko nedívá) — dá se zvednout okno `DAYS`.
 
 **Filozofie dalšího vývoje:** Bob řekl „základ máme, bude to o dolaďování během
 úkolování". Čekej drobné UX úpravy z reálného provozu, ne velké přestavby.
@@ -327,20 +451,27 @@ otázce na nejasné hrany, pak to postav a otestuj.
 
 ---
 
-## 7. Tipy pro zásahy do kódu
+## 8. Tipy pro zásahy do kódu
 
 - Soubor je strukturovaný: `<style>` → HTML (header s ⚙, pager se 2 tečkami,
-  **4 `<section>` pages** každá s `track`/dvěma `panel`, sheety, modaly) →
-  `<script>` (state/normalize/load/save → date helpers → NÁVYKY → projektové
-  ÚKOLY → TASKS úkolová sekce → Přehled úkolů → confirm/toast/piňa → settings →
-  navigace (swipe/taby/pager) → FAB → init).
-- **Navigace:** `updateUI()` je centrální — transformuje všechny 4 tracky podle
-  `curView`, přepíná `.page.active` podle `curSection`, syncuje taby/pager/title.
-  Taby nastavují `curSection`, swipe a pager tečky nastavují `curView`.
+  **5 `<section>` pages** — 0–3 s `track`/dvěma `panel`, `secMove` s jedním —
+  sheety, modaly) → `<script>` (state/normalize/load/save → date helpers →
+  NÁVYKY → projektové ÚKOLY → TASKS úkolová sekce → Přehled úkolů →
+  confirm/toast/piňa → settings → **MOVE (renderMove/moveCell/importMoveData/
+  fetchMoveData/recalcMoveCaps)** → navigace (swipe/taby/pager) → FAB → init).
+- **Navigace:** `updateUI()` je centrální — transformuje tracky podle `curView`
+  (Move track vždy 0), přepíná `.page.active` podle `curSection`, syncuje
+  taby/pager/title, skrývá pager+FAB na Move. Taby nastavují `curSection`, swipe
+  a pager tečky nastavují `curView`.
 - `renderCheck()` = router pro úkolovou (Tasks) Check stranu (default + backlog
   view).
 - `renderAll()` volá všechny rendery najednou (Check i Přehled všech sekcí jsou
-  v DOMu pořád, jen schované). Sourozenecký sync (viz sekce 2) je proto nutný.
+  v DOMu pořád, jen schované), **včetně `renderMove()`**. Sourozenecký sync (viz
+  sekce 2) je proto nutný. Auto-fetch Move (`fetchMoveData()`) se volá zvlášť na
+  konci initu (async).
+- **Move/Garmin:** vizuál a datový model v `index.html` (sekce 5), ale sync motor
+  je v `local/garmin/` (mimo git). Když měníš tvar `move_data.json`, musí sedět
+  `build_data.py` (výstup) ↔ `importMoveData` (vstup) ↔ `moveCell` (render).
 - Po každé změně: `node -e` syntax check (`new Function`), kontrola párování
   `<div>`, ověření že volaná `getElementById` ID existují v HTML.
 - Datové helpery navíc pro úkoly: `parseKey`, `fmtCalLabel`, `addMonths`,
