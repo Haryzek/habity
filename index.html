@@ -1347,6 +1347,7 @@ function normalize(o){
       if(Array.isArray(ov.casti)) clean.casti = ov.casti.filter(function(t){ return typeof t==="string"; });
       if(typeof ov.priorita==="number" && ov.priorita>=1 && ov.priorita<=5) clean.priorita = Math.round(ov.priorita);
       if(typeof ov.oblibena==="boolean") clean.oblibena = ov.oblibena;
+      if(typeof ov.videno==="boolean") clean.videno = ov.videno;
       if(typeof ov.aktivni==="boolean") clean.aktivni = ov.aktivni;
       if(Object.keys(clean).length) s.litOverlay[id] = clean;
     });
@@ -1361,6 +1362,7 @@ function normalize(o){
           casti: Array.isArray(x.casti) ? x.casti.filter(function(t){ return typeof t==="string"; }) : [],
           priorita: (typeof x.priorita==="number" && x.priorita>=1 && x.priorita<=5) ? Math.round(x.priorita) : 2,
           oblibena: !!x.oblibena,
+          videno: !!x.videno,
           aktivni: x.aktivni!==false
         };
       });
