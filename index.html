@@ -79,6 +79,20 @@
   .move-cell .mk{font-family:var(--mono);font-size:10px;color:var(--dim);line-height:1;}
   .move-slot{height:42px;display:flex;align-items:center;justify-content:center;}
   .move-dot{width:5px;height:5px;border-radius:50%;background:var(--empty);}
+  /* editovatelné buňky (klik → dialog) + zámek natvrdo */
+  .move-cell--edit{cursor:pointer;position:relative;}
+  .move-cell--edit:active{transform:scale(.96);}
+  .move-lock{position:absolute;top:-1px;right:0;font-size:11px;line-height:1;pointer-events:none;}
+  /* dialog editace dne */
+  .move-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 12px;margin-bottom:12px;}
+  .move-edit-f label{margin-bottom:5px;}
+  .move-edit-f input[type=number]{
+    width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;
+    color:var(--text);font-family:var(--mono);font-size:16px;padding:9px 13px;
+    -webkit-user-select:text;user-select:text;
+  }
+  .move-edit-f input[type=number]:focus{outline:none;border-color:var(--accent);}
+  .move-edit-note{font-family:var(--mono);font-size:10px;color:var(--dim);line-height:1.5;margin:0 0 14px;text-transform:uppercase;letter-spacing:.4px;}
 
   /* ---- today cards ---- */
   .card{
@@ -966,6 +980,37 @@
     <button class="btn btn-danger btn-slim" id="utDelete" style="display:none">Smazat úkol</button>
   </div>
 </div>
+<!-- MOVE: ruční editace dne (4 údaje, zámek proti přepsání syncem) -->
+<div class="scrim" id="moveScrim">
+  <div class="sheet" id="moveSheet">
+    <h2 id="moveEditTitle">Upravit den</h2>
+    <div class="move-edit-grid">
+      <div class="move-edit-f">
+        <label>Kalorie (kcal)</label>
+        <input type="number" id="moveKcal" min="0" step="1" inputmode="numeric">
+      </div>
+      <div class="move-edit-f">
+        <label>Trvání (min)</label>
+        <input type="number" id="moveDur" min="0" step="1" inputmode="numeric">
+      </div>
+      <div class="move-edit-f">
+        <label>Vzdálenost (m)</label>
+        <input type="number" id="moveDist" min="0" step="1" inputmode="numeric">
+      </div>
+      <div class="move-edit-f">
+        <label>Tep (bpm)</label>
+        <input type="number" id="moveHr" min="0" step="1" inputmode="numeric" placeholder="—">
+      </div>
+    </div>
+    <p class="move-edit-note" id="moveEditNote"></p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="moveSave">Uložit natvrdo</button>
+      <button class="btn btn-ghost" id="moveCancel">Zrušit</button>
+    </div>
+    <button class="btn btn-danger btn-slim" id="moveUnlock" style="display:none">Odemknout (vrátit k syncu)</button>
+  </div>
+</div>
+
 <div class="scrim" id="setScrim">
   <div class="sheet">
     <h2>Data</h2>
@@ -1064,7 +1109,9 @@ function blankState(){
     tasks:[], backlogs:["Wip","Done"], utasks:[], daily:{},
     taskBacklogSel:["Wip"],
     freeFilter:{ tags:{}, durationMin:0, durationMax:16, funMin:1, expanded:false, search:"" },
-    move:{ days:{}, caps:{ kcal:600, dist:5000, hrBase:55, hrCap:130 } },
+    // days = data ze syncu (přepisuje import); overrides = ruční přepisy dne, které
+    // sync NEPŘEPÍŠE (zámek natvrdo). Efektivní hodnota dne = overrides ?? days.
+    move:{ days:{}, overrides:{}, caps:{ kcal:600, dist:5000, hrBase:55, hrCap:130 } },
     // Litánie: SOUKROMÁ data, nikdy ne online. Zdroj se JEDNORÁZOVĚ naimportuje z disku
     // (⚙ Data) do localStorage — odtud je kryje jen JSON export, jako zbytek appky.
     //  litBase = základní věty (import z litanie.json), litTemata/litCasti = definice tagů
@@ -1254,6 +1301,20 @@ function normalize(o){
       var c = o.move.caps;
       ["kcal","dist","hrBase","hrCap"].forEach(function(f){
         if(typeof c[f]==="number" && c[f]>0) s.move.caps[f] = Math.round(c[f]);
+      });
+    }
+    // ruční zámky dní — přežijí re-import ze syncu
+    if(o.move.overrides && typeof o.move.overrides==="object"){
+      Object.keys(o.move.overrides).forEach(function(k){
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
+        var d = o.move.overrides[k];
+        if(!d || typeof d!=="object") return;
+        s.move.overrides[k] = {
+          kcal:   Math.max(0, Math.round(+d.kcal   || 0)),
+          durMin: Math.max(0, Math.round(+d.durMin || 0)),
+          distM:  Math.max(0, Math.round(+d.distM  || 0)),
+          hr:     (typeof d.hr==="number" && d.hr>0) ? Math.round(d.hr) : null
+        };
       });
     }
   }
@@ -3110,9 +3171,13 @@ function moveSemi(cx, cy, r, side, ratio){
 // viewBox 100×100 pro všechny buňky; SVG se roztáhne na šířku buňky (CSS
 // width:100%), takže prstenec má napříč dnem stejnou px tloušťku (fix šířka
 // prstence), zatímco průměr kruhu roste s kcal.
-function moveCell(rec, isFuture){
+function moveCell(rec, isFuture, dateKey, locked){
+  // budoucí dny needitujeme; ostatní jsou klikací (i prázdné → ruční přidání)
+  var editAttr = isFuture ? '' : ' data-date="'+dateKey+'"';
+  var cls = 'move-cell'+(isFuture ? '' : ' move-cell--edit')+(locked ? ' move-cell--locked' : '');
+  var lock = locked ? '<span class="move-lock" title="Zamčeno – sync nepřepíše">🔒</span>' : '';
   if(isFuture || !rec || (!rec.kcal && !rec.durMin && !rec.distM)){
-    return '<div class="move-cell"><div class="move-slot"><span class="move-dot"></span></div><span class="mk">&nbsp;</span></div>';
+    return '<div class="'+cls+'"'+editAttr+'><div class="move-slot"><span class="move-dot"></span></div><span class="mk">&nbsp;</span>'+lock+'</div>';
   }
   var caps = state.move.caps;
   var cx = 50, cy = 50;
@@ -3136,14 +3201,23 @@ function moveCell(rec, isFuture){
       '<path d="'+Rr.d+'" fill="none" stroke="var(--missed)" stroke-width="'+STROKE+'" stroke-linecap="round" stroke-dasharray="'+Rr.on+' '+Rr.len+'"/>'+
       '<text x="50" y="51" text-anchor="middle" dominant-baseline="central" font-family="var(--sans)" font-weight="700" font-size="'+fs+'" fill="#15120E">'+rec.durMin+'</text>'+
     '</svg>';
-  return '<div class="move-cell"><div class="move-disc">'+svg+'</div><span class="mk">'+rec.kcal+'</span></div>';
+  return '<div class="'+cls+'"'+editAttr+'><div class="move-disc">'+svg+'</div><span class="mk">'+rec.kcal+'</span>'+lock+'</div>';
+}
+
+// sloučení: den ze syncu (days) překrytý ručním zámkem (overrides ?? days)
+function moveEffDays(){
+  var base = state.move.days||{}, ov = state.move.overrides||{}, out = {};
+  Object.keys(base).forEach(function(k){ out[k] = base[k]; });
+  Object.keys(ov).forEach(function(k){ out[k] = ov[k]; });
+  return out;
 }
 
 function renderMove(){
   var grid = document.getElementById("moveGrid");
   var empty = document.getElementById("moveEmpty");
   if(!grid) return;
-  var days = state.move.days;
+  var days = moveEffDays();
+  var ov = state.move.overrides || {};
   var keys = Object.keys(days);
   if(!keys.length){ grid.innerHTML=""; if(empty) empty.style.display=""; return; }
   if(empty) empty.style.display="none";
@@ -3155,8 +3229,8 @@ function renderMove(){
   for(var wk=new Date(endMon); wk>=startMon; wk=addDays(wk,-7)){
     html += '<div class="move-week">';
     for(var i=0;i<7;i++){
-      var d = addDays(wk,i);
-      html += moveCell(days[key(d)], d>t);
+      var d = addDays(wk,i), dk = key(d);
+      html += moveCell(days[dk], d>t, dk, !!ov[dk]);
     }
     html += '</div>';
   }
@@ -3166,7 +3240,7 @@ function renderMove(){
 // přepočet stropů z importovaných dat (90. percentil); tep necháváme
 // na Bobově režimu (base/cap), ať je prstenec citlivý i při málo datech
 function recalcMoveCaps(){
-  var days = state.move.days, keys = Object.keys(days);
+  var days = moveEffDays(), keys = Object.keys(days);
   if(!keys.length) return;
   function p90(vals){
     var a = vals.filter(function(v){ return v>0; }).sort(function(x,y){ return x-y; });
@@ -3226,6 +3300,78 @@ document.getElementById("btnRefreshMove").onclick = function(){
     .catch(function(){ toast("Načtení Move dat selhalo (offline / soubor chybí?)."); })
     .finally(function(){ btn.disabled = false; btn.textContent = orig; });
 };
+
+/* ---- Ruční editace dne (zámek natvrdo) ----
+   Klik na kolečko → dialog se 4 údaji. Uložení zapíše state.move.overrides[date],
+   který import (auto i ruční) nikdy nepřepíše. Odemknutí override smaže → den
+   zas řídí sync. */
+var moveEditDate = null;
+
+function moveFmtDate(dk){
+  var p = String(dk).split("-");
+  return p.length===3 ? (p[2]+"."+p[1]+"."+p[0]) : dk;
+}
+
+function openMoveEdit(dk){
+  moveEditDate = dk;
+  var ov = state.move.overrides || {};
+  var locked = !!ov[dk];
+  var rec = locked ? ov[dk] : (state.move.days[dk] || {kcal:0,durMin:0,distM:0,hr:null});
+  document.getElementById("moveKcal").value = rec.kcal   || 0;
+  document.getElementById("moveDur").value  = rec.durMin || 0;
+  document.getElementById("moveDist").value = rec.distM  || 0;
+  document.getElementById("moveHr").value   = (rec.hr!=null ? rec.hr : "");
+  document.getElementById("moveEditTitle").textContent = "Upravit " + moveFmtDate(dk);
+  document.getElementById("moveEditNote").textContent = locked
+    ? "Den je zamčený — sync ho nepřepíše. Ulož nové hodnoty, nebo odemkni."
+    : "Uložením se den zamkne a další automatický sync ho nepřepíše.";
+  document.getElementById("moveUnlock").style.display = locked ? "" : "none";
+  document.getElementById("moveScrim").classList.add("open");
+}
+function closeMoveEdit(){
+  document.getElementById("moveScrim").classList.remove("open");
+  moveEditDate = null;
+}
+
+document.getElementById("moveGrid").addEventListener("click", function(e){
+  var cell = e.target.closest ? e.target.closest(".move-cell--edit") : null;
+  if(!cell) return;
+  var dk = cell.getAttribute("data-date");
+  if(dk) openMoveEdit(dk);
+});
+
+document.getElementById("moveSave").onclick = function(){
+  if(!moveEditDate) return;
+  function num(id){ var v = Math.round(+document.getElementById(id).value); return (isFinite(v) && v>0) ? v : 0; }
+  var hrRaw = document.getElementById("moveHr").value;
+  var hrN = Math.round(+hrRaw);
+  var rec = {
+    kcal:   num("moveKcal"),
+    durMin: num("moveDur"),
+    distM:  num("moveDist"),
+    hr:     (String(hrRaw).trim()!=="" && isFinite(hrN) && hrN>0) ? hrN : null
+  };
+  if(!state.move.overrides) state.move.overrides = {};
+  state.move.overrides[moveEditDate] = rec;
+  recalcMoveCaps();
+  save();
+  renderMove();
+  toast("Den zamčen natvrdo. 🔒");
+  closeMoveEdit();
+};
+
+document.getElementById("moveUnlock").onclick = function(){
+  if(!moveEditDate) return;
+  if(state.move.overrides) delete state.move.overrides[moveEditDate];
+  recalcMoveCaps();
+  save();
+  renderMove();
+  toast("Odemčeno — den zas řídí sync.");
+  closeMoveEdit();
+};
+
+document.getElementById("moveCancel").onclick = closeMoveEdit;
+document.getElementById("moveScrim").onclick = function(e){ if(e.target===this) closeMoveEdit(); };
 
 /* ================= LITÁNIE ================= */
 // Zdroj = litanie.json (read-only, v gitu). Změny žijí v state.litOverlay / state.litNew.
