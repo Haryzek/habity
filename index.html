@@ -82,7 +82,8 @@
   /* editovatelné buňky (klik → dialog) + zámek natvrdo */
   .move-cell--edit{cursor:pointer;position:relative;}
   .move-cell--edit:active{transform:scale(.96);}
-  .move-lock{position:absolute;top:-1px;right:0;font-size:11px;line-height:1;pointer-events:none;}
+  /* zamčený den (override odolný syncu) = kalorie italikou, bez ikonky */
+  .move-cell--locked .mk{font-style:italic;}
   /* dialog editace dne */
   .move-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 12px;margin-bottom:12px;}
   .move-edit-f label{margin-bottom:5px;}
@@ -3174,10 +3175,10 @@ function moveSemi(cx, cy, r, side, ratio){
 function moveCell(rec, isFuture, dateKey, locked){
   // budoucí dny needitujeme; ostatní jsou klikací (i prázdné → ruční přidání)
   var editAttr = isFuture ? '' : ' data-date="'+dateKey+'"';
+  // zamčený den (odolný syncu) se pozná italikou kalorií pod kolečkem, ne ikonkou
   var cls = 'move-cell'+(isFuture ? '' : ' move-cell--edit')+(locked ? ' move-cell--locked' : '');
-  var lock = locked ? '<span class="move-lock" title="Zamčeno – sync nepřepíše">🔒</span>' : '';
   if(isFuture || !rec || (!rec.kcal && !rec.durMin && !rec.distM)){
-    return '<div class="'+cls+'"'+editAttr+'><div class="move-slot"><span class="move-dot"></span></div><span class="mk">&nbsp;</span>'+lock+'</div>';
+    return '<div class="'+cls+'"'+editAttr+'><div class="move-slot"><span class="move-dot"></span></div><span class="mk">&nbsp;</span></div>';
   }
   var caps = state.move.caps;
   var cx = 50, cy = 50;
@@ -3201,7 +3202,7 @@ function moveCell(rec, isFuture, dateKey, locked){
       '<path d="'+Rr.d+'" fill="none" stroke="var(--missed)" stroke-width="'+STROKE+'" stroke-linecap="round" stroke-dasharray="'+Rr.on+' '+Rr.len+'"/>'+
       '<text x="50" y="51" text-anchor="middle" dominant-baseline="central" font-family="var(--sans)" font-weight="700" font-size="'+fs+'" fill="#15120E">'+rec.durMin+'</text>'+
     '</svg>';
-  return '<div class="'+cls+'"'+editAttr+'><div class="move-disc">'+svg+'</div><span class="mk">'+rec.kcal+'</span>'+lock+'</div>';
+  return '<div class="'+cls+'"'+editAttr+'><div class="move-disc">'+svg+'</div><span class="mk">'+rec.kcal+'</span></div>';
 }
 
 // sloučení: den ze syncu (days) překrytý ručním zámkem (overrides ?? days)

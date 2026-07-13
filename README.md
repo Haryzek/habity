@@ -401,7 +401,8 @@ sekce Move   — plná automatika, nulová ruční práce
 **Ruční zámek dne (override odolný syncu).** Klik na **kolečko** kteréhokoli dne
 (i prázdného) v Move otevře dialog se **4 údaji** (kcal / trvání / vzdálenost / tep).
 Uložení („Uložit natvrdo") zapíše hodnoty do **`state.move.overrides[YYYY-MM-DD]`** a den
-se **zamkne** (v rohu kolečka 🔒). Efektivní hodnota dne = **`overrides ?? days`**
+se **zamkne** (poznáš podle **kalorií italikou** pod kolečkem — `.move-cell--locked .mk`,
+žádná ikonka). Efektivní hodnota dne = **`overrides ?? days`**
 (`moveEffDays()`), takže zamčený den **přepíše i to, co přijde ze syncu** — import (auto
 i ruční refresh) sahá jen do `days`, `overrides` nechává být. Tím pádem editace přežije
 i další běh skriptu; **nahradilo to** dřívější workflow „ruční úprava jsonu na GitHubu"
