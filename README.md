@@ -178,6 +178,7 @@ destruktivní migrace. v1 → v2 migrace pro stará data existuje taky.
   // ----- MOVE (Garmin aktivita, viz sekce 5) -----
   move: {
     days: { "YYYY-MM-DD": {kcal, durMin, distM, hr} },  // agregát dne (píše skript/import)
+    overrides: { "YYYY-MM-DD": {kcal, durMin, distM, hr} },  // ruční zámky dní, sync je nepřepíše (viz 5b)
     caps: { kcal:679, dist:3729, hrBase:55, hrCap:130 }  // stropy prstenců; kcal/dist p90 z dat, hr napevno
   },
 
@@ -396,6 +397,18 @@ sekce Move   — plná automatika, nulová ruční práce
   = průměr vážený délkou. Bereme **všechny aktivity** (chůze, tenis, plavání…),
   jen ručně **zaznamenané** (Garmin `get_activities`; celodenní kroky bez
   spuštěného záznamu se do feedu nedostanou — Bobovo vědomé rozhodnutí, varianta A).
+
+**Ruční zámek dne (override odolný syncu).** Klik na **kolečko** kteréhokoli dne
+(i prázdného) v Move otevře dialog se **4 údaji** (kcal / trvání / vzdálenost / tep).
+Uložení („Uložit natvrdo") zapíše hodnoty do **`state.move.overrides[YYYY-MM-DD]`** a den
+se **zamkne** (poznáš podle **kalorií italikou** pod kolečkem — `.move-cell--locked .mk`,
+žádná ikonka). Efektivní hodnota dne = **`overrides ?? days`**
+(`moveEffDays()`), takže zamčený den **přepíše i to, co přijde ze syncu** — import (auto
+i ruční refresh) sahá jen do `days`, `overrides` nechává být. Tím pádem editace přežije
+i další běh skriptu; **nahradilo to** dřívější workflow „ruční úprava jsonu na GitHubu"
+(ta se dřív při dalším syncu ztratila). „Odemknout (vrátit k syncu)" override smaže → den
+zas řídí `days`. `recalcMoveCaps()` počítá stropy z efektivních dnů (zámek se počítá do
+p90). Overrides jsou součást `state`, takže jdou i do klasického exportu zálohy.
 
 ### 5c. Motor syncu — `local/garmin/` (git-ignorováno)
 
