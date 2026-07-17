@@ -776,13 +776,17 @@
         <div class="free-search-row">
           <input type="text" id="freeSearch" class="free-search" placeholder="Hledat…" autocomplete="off">
         </div>
-        <div class="free-filter-row" id="freeFilterBar"></div>
+        <div class="free-filter-row ffbar" id="freeFilterBar"></div>
         <div id="todayList1"></div>
         <div class="empty-state" id="todayEmpty1" style="display:none">
           Zatím žádná volnočasovka.<br>Ťukni na <b style="color:var(--accent)">+</b> a přidej první.
         </div>
       </div>
       <div class="panel">
+        <div class="free-search-row">
+          <input type="text" id="freeSearchOv" class="free-search" placeholder="Hledat…" autocomplete="off">
+        </div>
+        <div class="free-filter-row ffbar" id="freeFilterBarOv"></div>
         <div class="legend">
           <span><i style="background:var(--done)"></i>splněno</span>
           <span><i style="background:var(--missed)"></i>nesplněno</span>
@@ -1523,7 +1527,10 @@ function freeFilterActiveCount(){
 }
 function refreshFreeLists(){ renderTodayPanel(1); renderOverviewPanel(1); }
 function renderFreeFilterBar(){
-  var wrap = document.getElementById("freeFilterBar");
+  // Filtr žije na dvou místech (Check panel i čtverečkový přehled) — vykreslíme do obou.
+  document.querySelectorAll(".ffbar").forEach(buildFreeFilterBar);
+}
+function buildFreeFilterBar(wrap){
   if(!wrap) return;
   var f = state.freeFilter;
   wrap.innerHTML = "";
@@ -1635,8 +1642,11 @@ function renderFreeFilterBar(){
 document.addEventListener("pointerdown", function(e){
   var f = state.freeFilter;
   if(!f || !f.expanded) return;
-  var bar = document.getElementById("freeFilterBar");
-  if(bar && !bar.contains(e.target)){
+  var inside = false;
+  document.querySelectorAll(".ffbar").forEach(function(bar){
+    if(bar.contains(e.target)) inside = true;
+  });
+  if(!inside){
     f.expanded = false; save(); renderFreeFilterBar();
   }
 });
@@ -1708,6 +1718,8 @@ function renderOverviewPanel(si){
       '<span class="stat"></span><span class="chev">›</span>';
     head.querySelector(".name").textContent = h.name;
     head.querySelector(".stat").textContent = doneCount+"/90";
+    // Nadpis → editace aktivity; čísílka + šipka vpravo → celkový přehled.
+    head.querySelector(".name").onclick = function(ev){ ev.stopPropagation(); openSheet(si, h.id); };
     head.onclick = function(){ openDetail(si, h.id); };
     block.appendChild(head); block.appendChild(grid); list.appendChild(block);
   });
@@ -1734,34 +1746,25 @@ function openDetail(si, id){
   });
   var t = today(), tk = key(t);
   var totalDays = Math.round((t - startD)/86400000) + 1;
-  var rows = Math.ceil(totalDays/30);
-  var startOffset = rows*30 - 1;
-  var html = '<h2></h2><span class="sub"></span>';
-  for(var r=0;r<rows;r++){
-    var rowStart = addDays(t, -(startOffset - r*30));
-    html += '<div class="month-row"><div class="ml">'+fmtShort(rowStart)+'</div><div class="grid" data-row="'+r+'"></div></div>';
-  }
+  var html = '<h2></h2><span class="sub"></span><div class="grid" id="detailGrid"></div>';
   body.innerHTML = html;
   body.querySelector("h2").textContent = h.name;
   body.querySelector(".sub").textContent = "priorita "+h.priority+" · od "+fmtShort(startD)+" "+startD.getFullYear();
-  body.querySelectorAll(".grid").forEach(function(g){
-    var r = +g.dataset.row;
-    for(var c=0;c<30;c++){
-      var off = (startOffset - r*30) - c;
-      var d = addDays(t, -off), dk = key(d), inFuture = off < 0;
-      var cell = document.createElement("div");
-      var st = getState(si, id, dk);
-      cell.className = "cell"+(st?(" "+st):"")+(dk===tk?" today":"");
-      if(inFuture){ cell.style.visibility="hidden"; }
-      else (function(sIdx, dkey, cellEl){
-        cellEl.onclick = function(){
-          var nx = cycle(sIdx, id, dkey);
-          cellEl.className = "cell"+(nx?(" "+nx):"")+(dkey===tk?" today":"");
-        };
-      })(si, dk, cell);
-      g.appendChild(cell);
-    }
-  });
+  // Jedna souvislá mřížka od nejstaršího dne po dnešek, bez měsíčních nadpisů.
+  var g = body.querySelector("#detailGrid");
+  for(var off=totalDays-1; off>=0; off--){
+    var d = addDays(t, -off), dk = key(d);
+    var cell = document.createElement("div");
+    var st = getState(si, id, dk);
+    cell.className = "cell"+(st?(" "+st):"")+(dk===tk?" today":"");
+    (function(sIdx, dkey, cellEl){
+      cellEl.onclick = function(){
+        var nx = cycle(sIdx, id, dkey);
+        cellEl.className = "cell"+(nx?(" "+nx):"")+(dkey===tk?" today":"");
+      };
+    })(si, dk, cell);
+    g.appendChild(cell);
+  }
   document.getElementById("detail").classList.add("open");
 }
 document.getElementById("detailBack").onclick = function(){
@@ -3041,6 +3044,9 @@ document.getElementById("btnClearOv").onclick = function(){
 var SEC_PAGES  = ["secProgress","secTasks","secNavyky","secVolno","secMove","secLitanie"];
 var SEC_TRACKS = ["trackProgress","trackTasks","trackNavyky","trackVolno","trackMove","trackLitanie"];
 var SEC_TITLES = ["Progress","Tasks","Habits","Free","Move","Litánie"];
+// Výchozí swipe-pozice sekce: Habits(2)/Free(3) startují na čtverečkovém přehledu (view 1),
+// zbytek na první ploše (view 0). Swipe na Check zůstává funkční. Vratné: srovnej zpět na 0.
+var SEC_DEFAULT_VIEW = [0,0,1,1,0,0];
 
 function applyViewToTrack(trackEl, animate){
   trackEl.style.transition = animate ? "transform .25s ease" : "none";
@@ -3130,6 +3136,7 @@ document.getElementById("fab").onclick = function(){
 document.querySelectorAll(".tab").forEach(function(tab){
   tab.onclick = function(){
     curSection = +tab.dataset.sec;
+    curView = SEC_DEFAULT_VIEW[curSection] || 0;
     updateUI();
   };
 });
@@ -3796,12 +3803,17 @@ function renderAll(){
   renderProgresPanel(); renderUtOverview(); renderOverviewPanel(0); renderOverviewPanel(1);
   renderMove(); refreshLit();
 }
-var freeSearchEl = document.getElementById("freeSearch");
-freeSearchEl.value = state.freeFilter.search || "";
-freeSearchEl.oninput = function(){
-  state.freeFilter.search = freeSearchEl.value;
-  save(); refreshFreeLists();
-};
+// Search je na dvou místech (Check panel i čtverečkový přehled) — drží se v sync přes jeden state.
+var freeSearchEls = [document.getElementById("freeSearch"), document.getElementById("freeSearchOv")];
+freeSearchEls.forEach(function(el){
+  if(!el) return;
+  el.value = state.freeFilter.search || "";
+  el.oninput = function(){
+    state.freeFilter.search = el.value;
+    freeSearchEls.forEach(function(other){ if(other && other!==el) other.value = el.value; });
+    save(); refreshFreeLists();
+  };
+});
 var litSearchEl = document.getElementById("litSearch");
 litSearchEl.value = state.litFilter.search || "";
 litSearchEl.oninput = function(){
