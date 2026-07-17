@@ -60,22 +60,26 @@ obsahem `<script>`) a párování tagů.
 spodní taby (Check / Přehled) a swipe přepínal mezi 4 sekcemi. **Teď je to
 obráceně:**
 
-- **Spodní taby = 6 sekcí.** Šest tlačítek dole: **Progress · Tasks · Habits ·
-  Free · Litánie · Move**. Klik na tab vždycky vede na **Check** rovinu té sekce
-  (Move ani Litánie Check/Přehled nemají — viz níž).
+- **Spodní taby = 6 sekcí.** Šest tlačítek dole, pořadí zleva: **Litánie ·
+  Progress · Tasks · Habits · Free · Move**. Klik na tab vede na **výchozí rovinu**
+  té sekce podle `SEC_DEFAULT_VIEW` — **Habits a Free defaultně na Přehled**
+  (čtverečky, view 1), zbytek na Check (view 0). Move ani Litánie Check/Přehled
+  nemají (viz níž).
   ⚠️ **Past pořadí vs. index:** vizuální pořadí v navu ≠ `curSection` index!
-  Litánie je v navu **mezi Free a Move**, ale logicky má **`curSection=5`**
+  Litánie je v navu **první zleva**, ale logicky má **`curSection=5`**
   (Move zůstal 4). Udělalo se to schválně, aby se nepřečíslovávala Move
   (`curSection===4` je po kódu na spoustě míst). Tab má `data-sec="5"`, ale sedí
-  v DOMu mezi Free a Move — pořadí `.page` sekcí je čistě vizuální, logiku řídí
+  v DOMu jako první — pořadí `.page` sekcí i tabů je čistě vizuální, logiku řídí
   index. **Když přidáváš další sekci, drž se tohohle: nový index na konec, tab
   umísti kam chceš.**
 - **Úzký nav → jen ikony.** Při 6 tabech se popisky na mobilu nevejdou:
   `@media (max-width:430px)` schová `.tab .tl` (label ve spanu) a nechá jen ikony.
 - **Swipe doleva/doprava = Check ↔ Přehled.** Horizontální swipe (nebo dvě tečky
-  pageru nahoře) přepíná mezi Check a Přehled rovinou. Tahle pozice je
-  **GLOBÁLNÍ a sdílená** napříč sekcemi 0–3 (`curView`: 0=Check, 1=Přehled) —
-  přepnu na Přehled v Tasks, kliknu na Free tab, jsem pořád na Přehledu.
+  pageru nahoře) přepíná mezi Check a Přehled rovinou. `curView` (0=Check,
+  1=Přehled) je pořád **globální proměnná**, ale **klik na tab ji resetuje** na
+  `SEC_DEFAULT_VIEW[curSection]` — takže Habits/Free přistanou na Přehledu,
+  ostatní na Checku, bez ohledu na to, kde jsi swipnul předtím. Swipe uvnitř sekce
+  pak funguje dál (Check na Habits/Free je pořád dostupný swipem doprava).
   **Move (4) a Litánie (5) jsou výjimky** — mají jen jednu plochu, swipe/pager se
   na ně nevztahují. Rozdíl: Move nemá ani FAB (data z importu), **Litánie FAB má**
   (přidání nové věty). `updateUI` proto řeší zvlášť `noPager = 4||5` a
@@ -87,10 +91,10 @@ obráceně:**
 |-----|-----|-------------|----------------|----------|
 | 0 | **Progress** | seznam projektů + kroky | mřížka náročnosti 3×30 | **Projektový** tracker — projekt (např. „Stěhování bytu") se odškrtávacími kroky, proporční proužky. SOLO. |
 | 1 | **Tasks** | WiP náhled + kalendář | Dny/Měsíce | Kalendářní task manager s backlogy, repeaty, rollupem. **DEFAULT landing při refreshi** (`curSection=1`). |
-| 2 | **Habits** | dnešní odškrtávání | mřížka 3×30 | Habit tracker. |
-| 3 | **Free** | dnešní odškrtávání **+ backlogy** | mřížka 3×30 (agreguje vše) | Druhý habit tracker (volnočas). **Nově má backlogy** — viz 3b. |
+| 2 | **Habits** | dnešní odškrtávání | mřížka 3×30 **(default rovina)** | Habit tracker. Zadává se klikáním do čtverečků; Check rovina zůstává přes swipe. |
+| 3 | **Free** | dnešní odškrtávání **+ backlogy** | mřížka 3×30 (agreguje vše) **(default rovina)** + search/filtr nahoře | Druhý habit tracker (volnočas). **Nově má backlogy** — viz 3b. |
 | 4 | **Move** | — (jedna plocha) | — | Garmin aktivita jako kolečka po týdnech. Data z Garmin Connectu, plní se samy. **Viz sekce 5.** |
-| 5 | **Litánie** | — (jedna plocha) | — | Podpůrné věty/přerámování, filtrované tagy. **Soukromá data — import z disku, nikdy online.** V navu mezi Free a Move. **Viz sekce 6.** |
+| 5 | **Litánie** | — (jedna plocha) | — | Podpůrné věty/přerámování, filtrované tagy. **Soukromá data — import z disku, nikdy online.** V navu první zleva. **Viz sekce 6.** |
 
 Pozn.: názvy v UI jsou anglicky (Progress/Tasks/Habits/Free/Move), zbytek appky
 česky. `hTitle` nahoře ukazuje jen název sekce (ne rozlišuje Check/Přehled).
@@ -122,6 +126,22 @@ viditelné během swipe, takže akce na jedné straně **musí refreshnout i dru
 Proto habit toggly volají `renderTodayPanel`+`renderOverviewPanel`, subtask toggly
 `renderTasksPanel`+`renderProgresPanel`, a `utComplete`/`utMiss` volají
 `renderCheck`+`renderUtOverview`.
+
+**Ovládání Přehled roviny Habits/Free (`renderOverviewPanel`):** hlavička bloku
+je rozdělená — **klik na nadpis** (`.name`, `stopPropagation`) otevře **editaci**
+aktivity (`openSheet`), **klik na čísílka+šipku** vpravo (zbytek hlavičky) otevře
+**celkový přehled** (`openDetail`). Ten je teď **jedna souvislá mřížka** od
+nejstaršího dne po dnešek — **bez měsíčních nadpisů** (dřív `.month-row` s `.ml`
+labely; zrušeno).
+
+**Free search+filtr je na DVOU místech** (Check panel i Přehled panel). Oba search
+inputy (`freeSearch` / `freeSearchOv`) i oba filtr bary (`.ffbar`:
+`freeFilterBar` / `freeFilterBarOv`) jedou přes jeden `state.freeFilter`, takže
+jsou vždy v sync. `renderFreeFilterBar` iteruje přes všechny `.ffbar` (staví přes
+`buildFreeFilterBar`). Návrat na jedno místo = smazat duplikát v HTML + tuhle
+duplikaci. Pozor: search input dědí **globální `input[type=text]{margin-bottom:12px}`**
+(vyšší specificita než `.free-search`) — nulováno přes `.free-search-row .free-search`,
+jinak mezera mezi search a filtrem nejde zmenšit marginem řádku.
 
 **Data se mezi sekcemi nepřelévají, ale nejsou to čtyři nezávislé světy — jsou
 tři.** Progress (`state.tasks`) a Tasks (`state.utasks`) jsou vzájemně i vůči
@@ -447,7 +467,7 @@ riziko konfliktů + nutná auth. Velký samostatný projekt, až bude potřeba.
 
 ## 6. LITÁNIE — podpůrné věty s tagy (pozice 5)
 
-Sekce **Litánie** (v navu mezi Free a Move, `curSection=5`) je knihovna
+Sekce **Litánie** (v navu první zleva, `curSection=5`) je knihovna
 podpůrných vět / přerámování / manter / vděčností, vytažená z Bobova Evernotu
 (10 let, deduplikace + AI tagging). **1254 vět**, tagované tématy (22) a částmi
 (13, IFS-style figury). Účel dvojí: **čistit** (Bob prochází a vyhazuje balast)
