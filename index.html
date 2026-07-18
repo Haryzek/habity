@@ -1070,6 +1070,7 @@
     <h2 id="pickerTitle">Backlog</h2>
     <div class="picker-list" id="pickerList"></div>
     <div class="btn-row" id="pickerMultiFoot" style="display:none">
+      <button class="btn btn-ghost btn-slim" id="pickerMultiReset" style="margin-top:0">Reset</button>
       <button class="btn btn-ghost btn-slim" id="pickerMultiCancel" style="margin-top:0">Zrušit</button>
       <button class="btn btn-primary btn-slim" id="pickerMultiOk" style="margin-top:0">Potvrdit</button>
     </div>
@@ -3080,6 +3081,12 @@ function fselOpen(selectId, title){
       applyTaskBacklogMulti(working);
     };
     document.getElementById("pickerMultiCancel").onclick = closePickerSheet;
+    // Reset = jen odškrtne všechny checkboxy, sheet zůstává otevřený
+    document.getElementById("pickerMultiReset").onclick = function(){
+      working.length = 0;
+      list.querySelectorAll(".picker-check").forEach(function(c){ c.classList.remove("on"); c.textContent = ""; });
+      list.querySelectorAll(".picker-item").forEach(function(r){ r.classList.remove("sel"); });
+    };
   } else {
     multiFoot.style.display = "none";
     singleCancel.style.display = "";

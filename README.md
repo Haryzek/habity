@@ -34,7 +34,7 @@ reálné potřeby, ne dopředu přeengineerované.
 
 **Sdílená dohoda Bob ↔ Claude:** stavět dál do jednoho souboru, dokud to drží
 pohromadě. Claude má **proaktivně křiknout**, až bude refactoring nebo rozdělení
-souboru na místě. *(Aktuální stav: soubor má ~3590 řádků / ~160 KB. Pořád
+souboru na místě. *(Aktuální stav: soubor má ~4020 řádků / ~180 KB. Pořád
 udržitelné, ale roste — přibyla sekce Move (viz sekce 5) a Litánie (viz sekce 6).
 Až přibude další velká sekce nebo se začne logovat per-task historie, je čas
 zvážit řez — ale Bob to nemá rád dělat předčasně, takže ne dřív, než to bude
@@ -180,10 +180,10 @@ destruktivní migrace. v1 → v2 migrace pro stará data existuje taky.
     {habits:[{id,name,priority,createdAt}], log},                    // 0=Habits
     {habits:[{id,name,priority,createdAt,backlog:"Free"}], log, backlogs:["Free",...]}  // 1=Free
   ],
-  tasks: [ {id,name,priority,createdAt, subtasks:[{id,name,weight,cells,done}]} ],  // projektové
+  tasks: [ {id,name,priority,createdAt, subtasks:[{id,name,weight,prio,cells,done}]} ],  // projektové
 
   // ----- TASKS (kalendářní úkolová sekce) -----
-  backlogs: ["Wip","Done", ...],   // Wip+Done vždy garantované a první dva; pak vlastní
+  backlogs: ["Wip","Done","Future", ...],   // Wip+Done+Future vždy garantované a první tři; pak vlastní
   utasks: [ {
     id, name, priority(1-10), createdAt,
     date: "YYYY-MM-DD" | null,     // null = nedatovaný (bydlí v backlogu); jinak v kalendáři
@@ -246,6 +246,22 @@ stav).
   `habitBacklog` + `habitNewBacklog`) se zobrazí **jen** když `editingSection===1`
   (Free). Pro Habits zůstává skrytý.
 
+### 3c. Progress — kroky s N/P, kompaktní placky
+
+- Každý krok (subtask) má vedle náročnosti (`weight`, v editaci slider **N:** 1–10)
+  i **prioritu** (`prio`, slider **P:** 1–10, default 5, `normalize()` doplní starým
+  datům). Oba slidery sedí vedle sebe na jedné řádce (jednopísmenné popisky).
+- **Výpis kroků v rozbalené placce** se řadí `prio` DESC → původní pořadí zadání
+  (stable sort). Proporční proužek i Přehled mřížka prio **ignorují** (jedou dál
+  na `weight`/`cells`).
+- **Placka projektu** (task-head): malý serif nadpis (13px, nízký padding), vpravo
+  🍹 když je projekt na 100 %, a **šedé „+"** — otevře editaci projektu a rovnou
+  přidá prázdný fokusnutý krok (`openTaskSheet(id, true)`). Priorita/procenta se
+  na placce už neukazují.
+- **`addSubRowFocused(container)`** — obecný helper „přidat krok + kurzor do
+  inputu + vysunout klávesnici". Používat u KAŽDÉHO stávajícího i budoucího
+  „+ krok" tlačítka (Bob plánuje další místa).
+
 ---
 
 ## 4. TASKS — kalendářní úkolová sekce (pozice 1)
@@ -262,10 +278,28 @@ stav).
    „Zítra · …", „pá 3. čvc"). Co úkol to řádek. Ukazuje úkoly ze **VŠECH** backlogů
    (kalendář = reálný den, backlogy jsou jen organizace).
 
-**Backlog view** (samostatný režim): klik na lištu „Wip" → plnoobrazovkový výpis
-s **dropdownem** (přepíná Wip / Done / vlastní backlogy). Ukazuje **jen
-nedatované** úkoly daného backlogu. Tlačítko „‹ Zpět" se vrací na default
-obrazovku. Done je vědomě „zabořený" za dropdown — Bobovi to tak stačí (archiv).
+**Lišta backlogů (wipbar):** dropdown „Wip" + vpravo na stejné řádce **rychlé
+volby** `WIP · SN · PSY · PR` (`.blog-quick`, stejná výška/styl jako dropdown).
+WIP otevře Wip backlog view; SN/PSY/PR otevřou **multi-výběr všech backlogů,
+jejichž název začíná daným prefixem** (case-insensitive, `applyTaskBacklogMulti`).
+Žádný match → jen toast. Rychlé volby jsou záměrně jen na hlavní stránce (v
+backlog view by se s „‹ Zpět" nevešly na mobil).
+
+**Backlog view** (samostatný režim): klik na lištu „Wip" → plnoobrazovkový výpis.
+Ukazuje **jen nedatované** úkoly vybraných backlogů; při více vybraných člení
+skupinovými hlavičkami. Tlačítko „‹ Zpět" se vrací na default obrazovku. Done je
+vědomě „zabořený" za dropdown — Bobovi to tak stačí (archiv).
+
+**Kompaktní picker backlogů (`fselOpen`):** nativní `<select>` zůstává skrytý
+jako zdroj pravdy, viditelné je tlačítko `.fsel-trigger` otvírající vlastní sheet.
+Řazení položek: prázdná hodnota („žádný") první → **systémové backlogy Done /
+Future / Wip nahoře a bold** (`.picker-item.sys`) → zbytek abecedně. **Future**
+je třetí garantovaný backlog (`normalize()` ho doplní). U vlastních backlogů má
+řádek **tužtičku ✎** (přejmenování přes prompt, `renameTaskBacklog` — přepíše
+název i na úkolech a ve výběrech) a **✕** (smazání); systémové nejdou ani
+přejmenovat, ani smazat. Multi-výběr (checkboxy) má dole tři tlačítka
+**Reset · Zrušit · Potvrdit** — Reset jen odškrtne všechny checkboxy a sheet
+nechá otevřený.
 
 ### 4b. Akce na úkolu
 
@@ -339,10 +373,18 @@ protože po sesunutí už úkol není `date < dnešek`.
 
 Název · priorita (slider 1–10, default 1, barevný vertikální proužek
 `prioColor`: hue 210 chladná → 0 sytě červená) · termín (segmenty
-Backlog/Dnes/Zítra + vždy viditelný datepicker; vyplnění data zhasne
-segmenty, klik na segment datum vymaže) · opakování (8 segmentů) · **bouncer box** (zašedlý
-když none/daily; den v týdnu pro weekly/biweekly; datepicker pro monthly+) ·
-výběr backlogu (dropdown, bez Done) + „+ nový backlog" (přes prompt).
+**Dnes/Zítra** + vždy viditelný datepicker; segment „Backlog" byl **zrušen** —
+žádný aktivní segment + prázdné datum = úkol jde do backlogu; **klik na aktivní
+segment ho vypne**, vyplnění data zhasne segmenty, klik na segment datum vymaže)
+· opakování (8 segmentů) · **bouncer box** (zašedlý když none/daily; den v týdnu
+pro weekly/biweekly; datepicker pro monthly+) · **dva pickery vedle sebe**
+(`.pick-row`): výběr backlogu (bez Done) | **„→ projekt…"** (`utProject`,
+`fillProjectPicker` — projekty ze sekce Progress) + „+ nový backlog" (prompt).
+
+**Přesun úkolu do Progress projektu:** když je v „→ projekt…" vybraný projekt,
+Uložit **nezaloží/neuloží úkol**, ale vepíše jeho název jako **nový krok**
+projektu (`weight:5, prio:5`), existující úkol smaže z `utasks` a ukáže toast.
+Hotový projekt se přidáním kroku zas „odhotoví" (`updateTaskCompletedAt`).
 
 Když má úkol repeat ale není zadané datum, použije se bouncer jako první kotva.
 
