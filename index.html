@@ -150,8 +150,7 @@
     display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;
   }
   .task-head .name{font-family:var(--serif);font-size:16px;flex:1;min-width:0;word-break:break-word;}
-  .task-head .prio{font-family:var(--mono);font-size:10px;color:var(--dim);flex-shrink:0;}
-  .task-head .pct{font-family:var(--mono);font-size:12px;color:var(--done);flex-shrink:0;}
+  .task-head .task-plus{background:none;border:none;color:var(--dim);font-size:20px;line-height:1;cursor:pointer;flex-shrink:0;padding:2px 6px;}
   .task-head .chev{color:var(--dim);font-size:13px;flex-shrink:0;transition:transform .18s ease;}
   .taskc.open .task-head .chev{transform:rotate(90deg);}
   /* mini proužek progresu ve sbalené hlavičce */
@@ -1989,8 +1988,6 @@ function renderTasksPanel(){
   empty.style.display = ts.length ? "none" : "block";
 
   ts.forEach(function(task){
-    var pct = Math.round(taskProgress(task)*100);
-    var isDone = task.subtasks.length>0 && pct>=100;
     var c = document.createElement("div");
     c.className = "taskc" + (expanded[task.id] ? " open" : "");
 
@@ -1999,12 +1996,15 @@ function renderTasksPanel(){
     head.innerHTML =
       '<span class="chev">›</span>'+
       '<span class="name"></span>'+
-      '<span class="prio">P'+task.priority+'</span>'+
-      '<span class="pct">'+(isDone?"🍹":pct+"%")+'</span>';
+      '<button class="task-plus" type="button" title="+ krok">+</button>';
     head.querySelector(".name").textContent = task.name;
     head.onclick = function(){
       expanded[task.id] = !expanded[task.id];
       renderTasksPanel();
+    };
+    head.querySelector(".task-plus").onclick = function(e){
+      e.stopPropagation();
+      openTaskSheet(task.id, true);
     };
     c.appendChild(head);
 
@@ -2144,7 +2144,8 @@ function makeSubRow(data){
   row.querySelector(".subedit-del").onclick = function(){ row.remove(); };
   return row;
 }
-function openTaskSheet(id){
+/* addStep=true → rovnou přidá prázdný krok a fokusne ho (místo fokusu názvu) */
+function openTaskSheet(id, addStep){
   editingTaskId = id || null;
   var rows = document.getElementById("subRows");
   rows.innerHTML = "";
@@ -2154,17 +2155,21 @@ function openTaskSheet(id){
     document.getElementById("taskName").value = t.name;
     taskPrio.value = t.priority; taskPrioVal.textContent = t.priority;
     if(t.subtasks.length) t.subtasks.forEach(function(s){ rows.appendChild(makeSubRow(s)); });
-    else rows.appendChild(makeSubRow());
+    else if(!addStep) rows.appendChild(makeSubRow());
     del.style.display = "block";
   } else {
     document.getElementById("taskName").value = "";
     taskPrio.value = 5; taskPrioVal.textContent = 5;
-    rows.appendChild(makeSubRow());
+    if(!addStep) rows.appendChild(makeSubRow());
     del.style.display = "none";
   }
   document.getElementById("taskScrim").classList.add("open");
   document.getElementById("taskSheet").scrollTop = 0;
-  setTimeout(function(){ document.getElementById("taskName").focus(); }, 100);
+  if(addStep){
+    addSubRowFocused(rows);
+  } else {
+    setTimeout(function(){ document.getElementById("taskName").focus(); }, 100);
+  }
 }
 function closeTaskSheet(){ document.getElementById("taskScrim").classList.remove("open"); }
 /* přidá prázdný řádek kroku a rovnou do něj hodí kurzor (vysune klávesnici).
